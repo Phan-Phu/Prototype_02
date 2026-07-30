@@ -38,38 +38,13 @@ public class LookAtCamera : MonoBehaviour
 
     private void LateUpdate()
     {
-        // Tính toán vector hướng từ objectB đến camera, trên mặt phẳng XZ
-        Vector3 directionToCamera = cameraMain.transform.position - objectB.position;
-        directionToCamera.y = 0f;  // Bỏ phần y để chỉ xét mặt phẳng ngang
-        directionToCamera.Normalize();
+        Quaternion camRot = cameraMain.transform.rotation;
+        transform.rotation = camRot;
 
-        // Khoảng cách từ objectA đến objectB theo bán kính
-        transform.position = objectB.position + directionToCamera * radius;
-
-        // Tính toán khoảng cách và điều chỉnh chiều cao của objectA
-        float cameraHeight = cameraMain.transform.position.y;
-        float adjustedHeight = cameraHeight * heightAdjustmentFactor;  // Điều chỉnh chiều cao dựa vào camera
-
-        // Giữ nguyên vị trí trên trục X và Z, chỉ thay đổi chiều cao (Y)
-        Vector3 adjustedPosition = transform.position;
-        adjustedPosition.y = adjustedHeight;
-
-        // Cập nhật vị trí objectA với chiều cao điều chỉnh
-        transform.position = adjustedPosition;
-
-        // Xoay objectA để luôn nhìn về camera (với hoặc không có invert)
-        Vector3 lookDirection = cameraMain.transform.position - transform.position;
-        //lookDirection.y = 0f;  // Loại bỏ thành phần Y để xoay trên mặt phẳng ngang
-        lookDirection.Normalize();
-
-        // Nếu có invert, đảo ngược hướng nhìn
         if (invert)
         {
-            lookDirection = -lookDirection;
+            transform.Rotate(0f, 180f, 0f, Space.Self);
         }
-
-        // Xoay objectA nhìn về camera
-        transform.rotation = Quaternion.LookRotation(lookDirection, Vector3.up);
     }
 
 }
