@@ -1,0 +1,21 @@
+{
+    "name": "Scripts",
+    "rootNamespace": "Scripts",
+    "references": [
+        "Domain",
+        "UniTask",
+        "Unity.TextMeshPro",
+        "Cinemachine",
+        "Unity.InputSystem",
+        ""
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
