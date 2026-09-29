@@ -27,15 +27,15 @@ namespace Application
 
         private void OnEnable()
         {
-            EventManager.AddListener<TurnChangedEvent>(TurnSystem_OnTurnChanged);
+            EventManager.AddListener<TurnChangedEvent>(OnTurnChangedEvent);
         }
 
         private void OnDisable()
         {
-            EventManager.RemoveListener<TurnChangedEvent>(TurnSystem_OnTurnChanged);
+            EventManager.RemoveListener<TurnChangedEvent>(OnTurnChangedEvent);
         }
 
-        private void TurnSystem_OnTurnChanged(TurnChangedEvent @event)
+        private void OnTurnChangedEvent(TurnChangedEvent @event)
         {
             UpdateTurnText();
             EnemyTurnVisual();

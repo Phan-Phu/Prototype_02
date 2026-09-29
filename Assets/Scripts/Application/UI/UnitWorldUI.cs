@@ -17,19 +17,30 @@ namespace Application
 
         private void Start()
         {
-            Unit.OnAnyActionPointChanged += Unit_OnAnyActionPointChanged;
-            healthSystem.OnDamged += HealthSystem_OnHealthChanged;
+            EventManager.AddListener<UnitActionPointsChangedEvent>(OnUnitActionPointsChangedEvent);
+            EventManager.AddListener<HealthDamagedEvent>(OnHealthDamagedEvent);
 
             ShowHealthBar();
             UpdateActionPointText();
+        }
+
+        private void OnDestroy()
+        {
+            EventManager.RemoveListener<UnitActionPointsChangedEvent>(OnUnitActionPointsChangedEvent);
+            EventManager.RemoveListener<HealthDamagedEvent>(OnHealthDamagedEvent);
         }
 
         private void UpdateActionPointText()
         {
             actionPointsText.text = unit.GetActionPoint().ToString();
         }
-        private void Unit_OnAnyActionPointChanged(object sender, EventArgs e)
+        private void OnUnitActionPointsChangedEvent(UnitActionPointsChangedEvent @event)
         {
+            if (@event.Unit != unit)
+            {
+                return;
+            }
+
             UpdateActionPointText();
         }
 
@@ -38,8 +49,13 @@ namespace Application
             healthBar.fillAmount = healthSystem.GetHealthNormalized();
         }
 
-        private void HealthSystem_OnHealthChanged(object sender, EventArgs e)
+        private void OnHealthDamagedEvent(HealthDamagedEvent @event)
         {
+            if (@event.HealthSystem != healthSystem)
+            {
+                return;
+            }
+
             ShowHealthBar();
         }
     }

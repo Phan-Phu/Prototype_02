@@ -11,10 +11,16 @@ namespace Application
 
         private void Start()
         {
-            BaseAction.OnAnyActionStarted += BaseAction_OnAnyActionStarted;
-            BaseAction.OnAnyActionCompleted += BaseAction_OnAnyActionCompleted;
+            EventManager.AddListener<ActionStartedEvent>(OnActionStartedEvent);
+            EventManager.AddListener<ActionCompletedEvent>(OnActionCompletedEvent);
 
             HideActionCamera();
+        }
+
+        private void OnDestroy()
+        {
+            EventManager.RemoveListener<ActionStartedEvent>(OnActionStartedEvent);
+            EventManager.RemoveListener<ActionCompletedEvent>(OnActionCompletedEvent);
         }
 
         private void ShowActionCamera()
@@ -27,9 +33,9 @@ namespace Application
             actionCameraGameObject.SetActive(false);
         }
 
-        private void BaseAction_OnAnyActionStarted(object sender, EventArgs e)
+        private void OnActionStartedEvent(ActionStartedEvent @event)
         {
-            switch (sender)
+            switch (@event.Action)
             {
                 case ShootAction shootAction:
                     Unit shooterUnit = shootAction.GetUnit();
@@ -52,9 +58,9 @@ namespace Application
             }
         }
 
-        private void BaseAction_OnAnyActionCompleted(object sender, EventArgs e)
+        private void OnActionCompletedEvent(ActionCompletedEvent @event)
         {
-            switch (sender)
+            switch (@event.Action)
             {
                 case ShootAction shootAction:
                     HideActionCamera();

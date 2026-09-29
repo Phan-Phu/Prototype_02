@@ -11,8 +11,6 @@ namespace Application
     {
         public static LevelGrid Instance { get; private set; }
 
-        public event EventHandler OnAnyMovedGridPosition;
-
         [SerializeField] Transform gridObjectPrefab;
         [SerializeField] private int witdth;
         [SerializeField] private int height;
@@ -62,7 +60,7 @@ namespace Application
             RemoveUnitAtGridPosition(fromGridPosition, unit);
             AddUnitAtGridPosition(toGridPosition, unit);
 
-            OnAnyMovedGridPosition?.Invoke(this, EventArgs.Empty);
+            EventManager.Broadcast(new UnitGridPositionChangedEvent(unit, fromGridPosition, toGridPosition));
         }
 
         public GridPosition GetGridPosition(Vector3 worldPosition) => gridSystem.GetGridPosition(worldPosition);

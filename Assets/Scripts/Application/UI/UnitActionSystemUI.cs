@@ -24,10 +24,9 @@ namespace Application
         {
             unitActionSystem = GameManager.Instance.Get<UnitActionSystem>();
 
-            unitActionSystem.OnSelectedUnitChanged += UnitActionSystem_OnSelectedUnitChanged;
-            unitActionSystem.OnSelectedActionChanged += UnitActionSystem_OnSelectedActionChanged;
-            unitActionSystem.OnActionPointChanged += UnitActionSystem_OnActionPointChanged;
-            Unit.OnAnyActionPointChanged += Unit_OnAnyActionPointChanged;
+            EventManager.AddListener<SelectedUnitChangedEvent>(OnSelectedUnitChangedEvent);
+            EventManager.AddListener<SelectedActionChangedEvent>(OnSelectedActionChangedEvent);
+            EventManager.AddListener<UnitActionPointsChangedEvent>(OnUnitActionPointsChangedEvent);
 
             CreateUnitActionButtons();
             UpdateSelectedVisual();
@@ -36,12 +35,19 @@ namespace Application
 
         private void OnEnable()
         {
-            EventManager.AddListener<TurnChangedEvent>(TurnSystem_OnTurnChanged);
+            EventManager.AddListener<TurnChangedEvent>(OnTurnChangedEvent);
         }
 
         private void OnDisable()
         {
-            EventManager.RemoveListener<TurnChangedEvent>(TurnSystem_OnTurnChanged);
+            EventManager.RemoveListener<TurnChangedEvent>(OnTurnChangedEvent);
+        }
+
+        private void OnDestroy()
+        {
+            EventManager.RemoveListener<SelectedUnitChangedEvent>(OnSelectedUnitChangedEvent);
+            EventManager.RemoveListener<SelectedActionChangedEvent>(OnSelectedActionChangedEvent);
+            EventManager.RemoveListener<UnitActionPointsChangedEvent>(OnUnitActionPointsChangedEvent);
         }
 
         private void CreateUnitActionButtons()
@@ -64,21 +70,16 @@ namespace Application
             }
         }
 
-        private void UnitActionSystem_OnSelectedUnitChanged(object sender, EventArgs e)
+        private void OnSelectedUnitChangedEvent(SelectedUnitChangedEvent @event)
         {
             CreateUnitActionButtons();
             UpdateSelectedVisual();
             UpdateActionPoint();
         }
 
-        private void UnitActionSystem_OnSelectedActionChanged(object sender, EventArgs e)
+        private void OnSelectedActionChangedEvent(SelectedActionChangedEvent @event)
         {
             UpdateSelectedVisual();
-        }
-
-        private void UnitActionSystem_OnActionPointChanged(object sender, EventArgs e)
-        {
-            UpdateActionPoint();
         }
 
         private void UpdateSelectedVisual()
@@ -95,12 +96,12 @@ namespace Application
             actionPointText.text = "Action Point: " + selectedUnit.GetActionPoint();
         }
 
-        private void TurnSystem_OnTurnChanged(TurnChangedEvent @event)
+        private void OnTurnChangedEvent(TurnChangedEvent @event)
         {
             UpdateActionPoint();
         }
 
-        private void Unit_OnAnyActionPointChanged(object sener, EventArgs e)
+        private void OnUnitActionPointsChangedEvent(UnitActionPointsChangedEvent @event)
         {
             UpdateActionPoint();
         }

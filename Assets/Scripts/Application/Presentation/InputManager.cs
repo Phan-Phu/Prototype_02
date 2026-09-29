@@ -21,6 +21,7 @@ namespace Application
                 return;
             }
             Instance = this;
+            DontDestroyOnLoad(gameObject);
 
             playerInputActions = new PlayerInputActions();
             playerInputActions.Enable();

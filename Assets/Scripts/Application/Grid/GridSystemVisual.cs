@@ -62,10 +62,16 @@ namespace Application
                 }
             }
 
-            unitActionSystem.OnSelectedActionChanged += UnitActionSystem_OnSelectedActionChanged;
-            LevelGrid.Instance.OnAnyMovedGridPosition += LevelGrid_OnAnyMovedGridPosition;
+            EventManager.AddListener<SelectedActionChangedEvent>(OnSelectedActionChangedEvent);
+            EventManager.AddListener<UnitGridPositionChangedEvent>(OnUnitGridPositionChangedEvent);
 
             UpdateVisualGrid();
+        }
+
+        private void OnDestroy()
+        {
+            EventManager.RemoveListener<SelectedActionChangedEvent>(OnSelectedActionChangedEvent);
+            EventManager.RemoveListener<UnitGridPositionChangedEvent>(OnUnitGridPositionChangedEvent);
         }
 
         public void HideAllGridPosition()
@@ -173,12 +179,12 @@ namespace Application
             ShowGridPositionList(seletedAction.GetValidActionPositionList(), gridVisualType);
         }
 
-        private void UnitActionSystem_OnSelectedActionChanged(object sender, EventArgs e)
+        private void OnSelectedActionChangedEvent(SelectedActionChangedEvent @event)
         {
             UpdateVisualGrid();
         }
 
-        private void LevelGrid_OnAnyMovedGridPosition(object sender, EventArgs e)
+        private void OnUnitGridPositionChangedEvent(UnitGridPositionChangedEvent @event)
         {
             UpdateVisualGrid();
         }

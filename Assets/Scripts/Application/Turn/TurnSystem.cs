@@ -21,6 +21,7 @@ namespace Application
                 return;
             }
             Instance = this;
+            DontDestroyOnLoad(gameObject);
 
             turnService = new TurnServiceImpl();
             turnService.TurnAdvanced += OnTurnAdvanced;

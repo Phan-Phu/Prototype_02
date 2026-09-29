@@ -9,22 +9,29 @@ namespace Application
     {
         private void Start()
         {
-            ShootAction.OnAnyShoot += ShootAction_OnAnyShoot;
-            GrenadeProjectile.OnAnyGrenadeExplode += GrenadeProjectile_OnAnyGrenadeExplode;
-            SwordAction.OnAnySwordHit += SwordAction_OnAnySwordHit;
+            EventManager.AddListener<ShootEvent>(OnShootEvent);
+            EventManager.AddListener<GrenadeExplodedEvent>(OnGrenadeExplodedEvent);
+            EventManager.AddListener<SwordHitEvent>(OnSwordHitEvent);
         }
 
-        private void SwordAction_OnAnySwordHit(object sender, EventArgs e)
+        private void OnDestroy()
+        {
+            EventManager.RemoveListener<ShootEvent>(OnShootEvent);
+            EventManager.RemoveListener<GrenadeExplodedEvent>(OnGrenadeExplodedEvent);
+            EventManager.RemoveListener<SwordHitEvent>(OnSwordHitEvent);
+        }
+
+        private void OnSwordHitEvent(SwordHitEvent @event)
         {
             ScreenShake.Instance.Shake(2f);
         }
 
-        private void GrenadeProjectile_OnAnyGrenadeExplode(object sender, EventArgs e)
+        private void OnGrenadeExplodedEvent(GrenadeExplodedEvent @event)
         {
             ScreenShake.Instance.Shake(5f);
         }
 
-        private void ShootAction_OnAnyShoot(object sender, ShootAction.OnShootEventArgs e)
+        private void OnShootEvent(ShootEvent @event)
         {
             ScreenShake.Instance.Shake();
         }

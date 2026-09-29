@@ -7,9 +7,6 @@ namespace Application
 {
     public class HealthSystem : MonoBehaviour
     {
-        public event EventHandler OnDead;
-        public event EventHandler OnDamged;
-
         [SerializeField] private int health = 100;
 
         private int healthMax;
@@ -21,6 +18,11 @@ namespace Application
 
         public void Damge(int damgeAmount)
         {
+            if (health <= 0)
+            {
+                return;
+            }
+
             health -= damgeAmount;
 
             if (health < 0)
@@ -28,17 +30,17 @@ namespace Application
                 health = 0;
             }
 
-            OnDamged?.Invoke(this, EventArgs.Empty);
-
             if(health == 0)
             {
                 Die();
             }
+
+            EventManager.Broadcast(new HealthDamagedEvent(this));
         }
 
         private void Die()
         {
-            OnDead?.Invoke(this, EventArgs.Empty);
+            EventManager.Broadcast(new HealthDepletedEvent(this));
         }
 
         public float GetHealthNormalized()

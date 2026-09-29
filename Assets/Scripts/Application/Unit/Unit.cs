@@ -10,10 +10,6 @@ namespace Application
     {
         [SerializeField] private int maxActionPoint = 2;
 
-        public static event EventHandler OnAnyActionPointChanged;
-        public static event EventHandler OnAnyUnitSpwaned;
-        public static event EventHandler OnAnyUnitDead;
-
         [SerializeField] private bool isEnemy;
 
         private GridPosition gridPosition;
@@ -35,19 +31,24 @@ namespace Application
             gridPosition = LevelGrid.Instance.GetGridPosition(transform.position);
             LevelGrid.Instance.AddUnitAtGridPosition(gridPosition, this);
 
-            healthSystem.OnDead += healthSystem_OnDead;
+            EventManager.AddListener<HealthDepletedEvent>(OnHealthDepletedEvent);
 
-            OnAnyUnitSpwaned?.Invoke(this, EventArgs.Empty);
+            EventManager.Broadcast(new UnitSpawnedEvent(this));
         }
 
         private void OnEnable()
         {
-            EventManager.AddListener<TurnChangedEvent>(TurnSystem_OnTurnChanged);
+            EventManager.AddListener<TurnChangedEvent>(OnTurnChangedEvent);
         }
 
         private void OnDisable()
         {
-            EventManager.RemoveListener<TurnChangedEvent>(TurnSystem_OnTurnChanged);
+            EventManager.RemoveListener<TurnChangedEvent>(OnTurnChangedEvent);
+        }
+
+        private void OnDestroy()
+        {
+            EventManager.RemoveListener<HealthDepletedEvent>(OnHealthDepletedEvent);
         }
 
         private void Update()
@@ -122,9 +123,6 @@ namespace Application
         {
             actionPoints -= amount;
 
-            OnAnyActionPointChanged?.Invoke(this, EventArgs.Empty);
-
-            // Parallel path alongside OnAnyActionPointChanged - not a cutover yet.
             EventManager.Broadcast(new UnitActionPointsChangedEvent(this, actionPoints));
         }
 
@@ -133,14 +131,14 @@ namespace Application
             return actionPoints;
         }
 
-        private void TurnSystem_OnTurnChanged(TurnChangedEvent @event)
+        private void OnTurnChangedEvent(TurnChangedEvent @event)
         {
             if ((IsEnemy() && !@event.IsPlayerTurn) ||
                (!IsEnemy() && @event.IsPlayerTurn))
             {
                 actionPoints = maxActionPoint;
 
-                OnAnyActionPointChanged?.Invoke(this, EventArgs.Empty);
+                EventManager.Broadcast(new UnitActionPointsChangedEvent(this, actionPoints));
             }
         }
 
@@ -154,12 +152,17 @@ namespace Application
             healthSystem.Damge(damgeAmount);
         }
 
-        private void healthSystem_OnDead(object sender, EventArgs e)
+        private void OnHealthDepletedEvent(HealthDepletedEvent @event)
         {
+            if (@event.HealthSystem != healthSystem)
+            {
+                return;
+            }
+
             LevelGrid.Instance.RemoveUnitAtGridPosition(gridPosition, this);
             Destroy(gameObject);
 
-            OnAnyUnitDead?.Invoke(this, EventArgs.Empty);
+            EventManager.Broadcast(new UnitDiedEvent(this));
         }
 
         public float GetHealthNormalized()

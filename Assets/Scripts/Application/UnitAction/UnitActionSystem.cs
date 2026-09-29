@@ -7,11 +7,6 @@ namespace Application
 {
     public class UnitActionSystem : MonoBehaviour
     {
-        public event EventHandler OnSelectedUnitChanged;
-        public event EventHandler OnSelectedActionChanged;
-        public event EventHandler<bool> OnBusyChanged;
-        public event EventHandler OnActionPointChanged;
-
         private BaseAction selectedAction;
 
         [SerializeField] private Unit selectedUnit;
@@ -68,21 +63,20 @@ namespace Application
 
             SetBusy();
             selectedAction.TakeAction(mouseGridPosition, ClearBusy);
-            OnActionPointChanged?.Invoke(this, EventArgs.Empty);
         }
 
         public void SetBusy()
         {
             isBusy = true;
 
-            OnBusyChanged?.Invoke(this, isBusy);
+            EventManager.Broadcast(new BusyChangedEvent(isBusy));
         }
 
         public void ClearBusy()
         {
             isBusy = false;
 
-            OnBusyChanged?.Invoke(this, isBusy);
+            EventManager.Broadcast(new BusyChangedEvent(isBusy));
         }
 
         private bool TryHandleUnitSelection()
@@ -124,14 +118,14 @@ namespace Application
 
             SetSelectedAction(unit.GetAction<MoveAction>());
 
-            OnSelectedUnitChanged?.Invoke(this, EventArgs.Empty); // check event empty or not
+            EventManager.Broadcast(new SelectedUnitChangedEvent(unit));
         }
 
         public void SetSelectedAction(BaseAction baseAction)
         {
             selectedAction = baseAction;
 
-            OnSelectedActionChanged?.Invoke(this, EventArgs.Empty);
+            EventManager.Broadcast(new SelectedActionChangedEvent(baseAction));
         }
 
         public BaseAction GetSelectedAction()

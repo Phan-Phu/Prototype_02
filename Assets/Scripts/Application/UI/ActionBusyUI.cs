@@ -7,14 +7,18 @@ namespace Application
 {
     public class ActionBusyUI : MonoBehaviour
     {
-        private UnitActionSystem unitActionSystem;
-
         private void Start()
         {
-            unitActionSystem = GameManager.Instance.Get<UnitActionSystem>();
-            unitActionSystem.OnBusyChanged += UnitActionSystem_OnBusyChanged;
+            // Subscribed in Start/OnDestroy (not OnEnable/OnDisable) because Hide() deactivates
+            // this GameObject - it must keep listening while hidden to be shown again.
+            EventManager.AddListener<BusyChangedEvent>(OnBusyChangedEvent);
 
             Hide();
+        }
+
+        private void OnDestroy()
+        {
+            EventManager.RemoveListener<BusyChangedEvent>(OnBusyChangedEvent);
         }
         private void Show()
         {
@@ -26,9 +30,9 @@ namespace Application
             gameObject.SetActive(false);
         }
 
-        private void UnitActionSystem_OnBusyChanged(object sender, bool isBusy)
+        private void OnBusyChangedEvent(BusyChangedEvent @event)
         {
-            if(isBusy)
+            if(@event.IsBusy)
             {
                 Show();
             }

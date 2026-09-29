@@ -8,8 +8,6 @@ namespace Application
 {
     public class Door : MonoBehaviour, IInteractable
     {
-        public event EventHandler<bool> OnOpenDoor;
-
         [SerializeField] private bool isOpen;
         [SerializeField] private Room room;
 
@@ -76,7 +74,7 @@ namespace Application
             isOpen = true;
             animator.SetBool("IsOpen", isOpen);
             Pathfinding.Instance.SetIsWalkableGridPositon(gridPosition, true);
-            OnOpenDoor?.Invoke(this, true);
+            EventManager.Broadcast(new DoorStateChangedEvent(this, true));
         }
 
         private void CloseDoor()
@@ -84,7 +82,7 @@ namespace Application
             isOpen = false;
             animator.SetBool("IsOpen", isOpen);
             Pathfinding.Instance.SetIsWalkableGridPositon(gridPosition, false);
-            OnOpenDoor?.Invoke(this, false);
+            EventManager.Broadcast(new DoorStateChangedEvent(this, false));
         }
 
         public Room GetRoomIsDoor()

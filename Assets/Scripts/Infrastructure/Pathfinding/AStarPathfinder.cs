@@ -90,7 +90,7 @@ namespace Infrastructure
                         {
                             neighbours.Add(new GridPosition(position.x + 1, position.y - 1));
                         }
-                        if (position.y + 1 <= gridSystem.GetHeight())
+                        if (position.y + 1 < gridSystem.GetHeight())
                         {
                             neighbours.Add(new GridPosition(position.x + 1, position.y + 1));
                         }
@@ -104,7 +104,7 @@ namespace Infrastructure
                         {
                             neighbours.Add(new GridPosition(position.x - 1, position.y - 1));
                         }
-                        if (position.y + 1 <= gridSystem.GetHeight())
+                        if (position.y + 1 < gridSystem.GetHeight())
                         {
                             neighbours.Add(new GridPosition(position.x - 1, position.y + 1));
                         }
