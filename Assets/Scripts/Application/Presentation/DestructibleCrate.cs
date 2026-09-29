@@ -8,8 +8,6 @@ namespace Application
 {
     public class DestructibleCrate : MonoBehaviour
     {
-        public static event EventHandler OnAnyDestroyed;
-
         [SerializeField] private Transform crateDestroyPrefab;
 
         private GridPosition gridPosition;
@@ -31,7 +29,7 @@ namespace Application
 
             Destroy(gameObject);
 
-            OnAnyDestroyed?.Invoke(this, EventArgs.Empty);
+            EventManager.Broadcast(new CrateDestroyedEvent(gridPosition));
         }
 
         private void ApplyExplosionToChildren(Transform root, float explosionForce, Vector3 explosionPosition, float explosionRange)

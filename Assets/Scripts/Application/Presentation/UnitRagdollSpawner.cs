@@ -16,11 +16,21 @@ namespace Application
         {
             healthSystem = GetComponent<HealthSystem>();
 
-            healthSystem.OnDead += HealthSystem_OnDead;
+            EventManager.AddListener<HealthDepletedEvent>(OnHealthDepletedEvent);
         }
 
-        private void HealthSystem_OnDead(object sender, EventArgs e)
+        private void OnDestroy()
         {
+            EventManager.RemoveListener<HealthDepletedEvent>(OnHealthDepletedEvent);
+        }
+
+        private void OnHealthDepletedEvent(HealthDepletedEvent @event)
+        {
+            if (@event.HealthSystem != healthSystem)
+            {
+                return;
+            }
+
             Transform ragdollTransform = Instantiate(ragdollPrefab, transform.position, transform.rotation);
             UnitRagdoll unitRagdoll = ragdollTransform.GetComponent<UnitRagdoll>();
             unitRagdoll.Setup(ragdollOriginalRootBone);

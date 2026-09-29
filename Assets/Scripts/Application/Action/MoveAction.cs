@@ -10,9 +10,6 @@ namespace Application
     {
         [SerializeField] private int maxDistance = 5;
 
-        public event EventHandler OnStartMoving;
-        public event EventHandler OnStopMoving;
-
         private List<Vector3> positionList;
         private int currentPositionIndex;
         private float speed = 4f;
@@ -40,7 +37,7 @@ namespace Application
                 currentPositionIndex++;
                 if (currentPositionIndex >= positionList.Count)
                 {
-                    OnStopMoving?.Invoke(this, EventArgs.Empty);
+                    EventManager.Broadcast(new MoveStoppedEvent(this));
                     ActionComplete();
                 }
             }
@@ -58,7 +55,7 @@ namespace Application
                 positionList.Add(LevelGrid.Instance.GetWorldPosition(pathGridPosition));
             }
 
-            OnStartMoving?.Invoke(this, EventArgs.Empty);
+            EventManager.Broadcast(new MoveStartedEvent(this));
 
             ActionStart(onActionComplete);
         }

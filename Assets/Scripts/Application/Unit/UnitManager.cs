@@ -29,13 +29,19 @@ namespace Application
             }
             Instance = this;
 
-            Unit.OnAnyUnitSpwaned += Unit_OnAnyUnitSpwaned;
-            Unit.OnAnyUnitDead += Unit_OnAnyUnitDead;
+            EventManager.AddListener<UnitSpawnedEvent>(OnUnitSpawnedEvent);
+            EventManager.AddListener<UnitDiedEvent>(OnUnitDiedEvent);
         }
 
-        private void Unit_OnAnyUnitSpwaned(object sender, EventArgs e)
+        private void OnDestroy()
         {
-            Unit unit = sender as Unit;
+            EventManager.RemoveListener<UnitSpawnedEvent>(OnUnitSpawnedEvent);
+            EventManager.RemoveListener<UnitDiedEvent>(OnUnitDiedEvent);
+        }
+
+        private void OnUnitSpawnedEvent(UnitSpawnedEvent @event)
+        {
+            Unit unit = @event.Unit;
 
             unitList.Add(unit);
             if (unit.IsEnemy())
@@ -48,9 +54,9 @@ namespace Application
             }
         }
 
-        private void Unit_OnAnyUnitDead(object sender, EventArgs e)
+        private void OnUnitDiedEvent(UnitDiedEvent @event)
         {
-            Unit unit = sender as Unit;
+            Unit unit = @event.Unit;
 
             unitList.Remove(unit);
             if (unit.IsEnemy())

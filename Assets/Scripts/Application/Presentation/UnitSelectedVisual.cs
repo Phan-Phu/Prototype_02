@@ -19,12 +19,12 @@ namespace Application
         private void Start()
         {
             unitActionSystem = GameManager.Instance.Get<UnitActionSystem>();
-            unitActionSystem.OnSelectedUnitChanged += UnitActionSystem_OnSelectedUnitChanged;
+            EventManager.AddListener<SelectedUnitChangedEvent>(OnSelectedUnitChangedEvent);
 
             UpdateVisual();
         }
 
-        private void UnitActionSystem_OnSelectedUnitChanged(object sender, EventArgs empty)
+        private void OnSelectedUnitChangedEvent(SelectedUnitChangedEvent @event)
         {
             UpdateVisual();
         }
@@ -43,7 +43,7 @@ namespace Application
 
         private void OnDestroy()
         {
-            unitActionSystem.OnSelectedUnitChanged -= UnitActionSystem_OnSelectedUnitChanged;
+            EventManager.RemoveListener<SelectedUnitChangedEvent>(OnSelectedUnitChangedEvent);
         }
     }
 

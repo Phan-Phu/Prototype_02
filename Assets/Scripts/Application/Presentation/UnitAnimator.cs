@@ -13,61 +13,87 @@ namespace Application
         [SerializeField] private Transform rifleTransform;
         [SerializeField] private Transform swordTransform;
 
+        private MoveAction moveAction;
+        private ShootAction shootAction;
+        private SwordAction swordAction;
+
         private void Awake()
         {
-            if (TryGetComponent<MoveAction>(out MoveAction moveAction))
-            {
-                moveAction.OnStartMoving += MoveAction_OnStartMoving;
-                moveAction.OnStopMoving += MoveAction_OnStopMoving;
-            }
+            moveAction = GetComponent<MoveAction>();
+            shootAction = GetComponent<ShootAction>();
+            swordAction = GetComponent<SwordAction>();
 
-            if (TryGetComponent<ShootAction>(out ShootAction shootAction))
-            {
-                shootAction.OnShoot += ShootAction_OnShoot;
-            }
-
-            if (TryGetComponent<SwordAction>(out SwordAction swordAction))
-            {
-                swordAction.OnSwordActionStarted += SwordAction_OnSwordActionStarted;
-                swordAction.OnSwordActionCompleted += SwordAction_OnSwordActionCompleted;
-            }
+            EventManager.AddListener<MoveStartedEvent>(OnMoveStartedEvent);
+            EventManager.AddListener<MoveStoppedEvent>(OnMoveStoppedEvent);
+            EventManager.AddListener<ShootEvent>(OnShootEvent);
+            EventManager.AddListener<SwordActionStartedEvent>(OnSwordActionStartedEvent);
+            EventManager.AddListener<SwordActionCompletedEvent>(OnSwordActionCompletedEvent);
         }
 
-        private void Start()
+        private void OnDestroy()
         {
-
+            EventManager.RemoveListener<MoveStartedEvent>(OnMoveStartedEvent);
+            EventManager.RemoveListener<MoveStoppedEvent>(OnMoveStoppedEvent);
+            EventManager.RemoveListener<ShootEvent>(OnShootEvent);
+            EventManager.RemoveListener<SwordActionStartedEvent>(OnSwordActionStartedEvent);
+            EventManager.RemoveListener<SwordActionCompletedEvent>(OnSwordActionCompletedEvent);
         }
 
-        private void SwordAction_OnSwordActionStarted(object sender, EventArgs e)
+        private void OnSwordActionStartedEvent(SwordActionStartedEvent @event)
         {
+            if (swordAction == null || @event.SwordAction != swordAction)
+            {
+                return;
+            }
+
             EquipSword();
             animator.SetTrigger("SwordSlash");
         }
 
-        private void SwordAction_OnSwordActionCompleted(object sender, EventArgs e)
+        private void OnSwordActionCompletedEvent(SwordActionCompletedEvent @event)
         {
+            if (swordAction == null || @event.SwordAction != swordAction)
+            {
+                return;
+            }
+
             EquipRifle();
         }
 
-        private void MoveAction_OnStartMoving(object sender, EventArgs e)
+        private void OnMoveStartedEvent(MoveStartedEvent @event)
         {
+            if (moveAction == null || @event.MoveAction != moveAction)
+            {
+                return;
+            }
+
             animator.SetBool("IsWalking", true);
         }
 
-        private void MoveAction_OnStopMoving(object sender, EventArgs e)
+        private void OnMoveStoppedEvent(MoveStoppedEvent @event)
         {
+            if (moveAction == null || @event.MoveAction != moveAction)
+            {
+                return;
+            }
+
             animator.SetBool("IsWalking", false);
         }
 
-        private void ShootAction_OnShoot(object sender, ShootAction.OnShootEventArgs e)
+        private void OnShootEvent(ShootEvent @event)
         {
+            if (shootAction == null || @event.ShootAction != shootAction)
+            {
+                return;
+            }
+
             animator.SetTrigger("Shoot");
 
             Transform bulletProjectileTransform = Instantiate(bulletProjectilePrefab, shootPointTransform.position, Quaternion.identity);
 
             BulletProjectile bulletProjectile = bulletProjectileTransform.GetComponent<BulletProjectile>();
 
-            Vector3 targetUnitShootAtPosition = e.targetUnit.GetWorldPosition();
+            Vector3 targetUnitShootAtPosition = @event.TargetUnit.GetWorldPosition();
             targetUnitShootAtPosition.y = shootPointTransform.position.y;
 
             bulletProjectile.Setup(targetUnitShootAtPosition);

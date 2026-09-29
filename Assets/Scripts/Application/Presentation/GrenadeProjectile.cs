@@ -8,8 +8,6 @@ namespace Application
 {
     public class GrenadeProjectile : MonoBehaviour
     {
-        public static event EventHandler OnAnyGrenadeExplode;
-
         [SerializeField] private Transform grenadeExplodeVfxPrefab;
         [SerializeField] private Renderer trailRenderer;
         [SerializeField] private AnimationCurve arcYAnimationCurve;
@@ -49,7 +47,7 @@ namespace Application
                         destructibleCrate.Damage();
                     }
                 }
-                OnAnyGrenadeExplode?.Invoke(this, EventArgs.Empty);
+                EventManager.Broadcast(new GrenadeExplodedEvent(targetPosition));
 
                 trailRenderer.transform.parent = null;
                 Instantiate(grenadeExplodeVfxPrefab, targetPosition + Vector3.up * 1f, Quaternion.identity);

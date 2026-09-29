@@ -22,6 +22,7 @@ namespace Application
                 return;
             }
             Instance = this;
+            DontDestroyOnLoad(gameObject);
 
             ConfigServices();
         }
@@ -39,13 +40,16 @@ namespace Application
 
             // Scene-placed MonoBehaviour - resolved via factory (can't be built by the container's own
             // Activator-based construction) so DI consumers share the one instance already in the scene.
-            services.AddSingleton(sp => FindAnyObjectByType<UnitActionSystem>());
+            // Transient (not singleton): GameManager outlives gameplay scenes, so a cached instance
+            // would point at a destroyed object after the scene is reloaded.
+            services.AddTransient(sp => FindAnyObjectByType<UnitActionSystem>());
 
             // Turn advancement is fire-and-forget (no caller needs a response), so it's driven
             // directly by TurnSystem + EventManager instead of the CQRS mediator below.
 
             services.AddSingleton<IMediator, MediatorImpl>();
-            services.AddSingleton<ICommandHandler<SelectUnitCommand, bool>, SelectUnitCommandHandler>();
+            // Transient because it holds the scene's UnitActionSystem.
+            services.AddTransient<ICommandHandler<SelectUnitCommand, bool>, SelectUnitCommandHandler>();
             services.AddSingleton<ICommandHandler<SpendActionPointCommand, bool>, SpendActionPointCommandHandler>();
 
             serviceProvider = services.BuildServiceProvider();

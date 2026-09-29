@@ -29,18 +29,28 @@ namespace Application
 
         private void Start()
         {
-            door1.OnOpenDoor += (object sender, bool isOpen) =>
+            EventManager.AddListener<DoorStateChangedEvent>(OnDoorStateChangedEvent);
+        }
+
+        private void OnDestroy()
+        {
+            EventManager.RemoveListener<DoorStateChangedEvent>(OnDoorStateChangedEvent);
+        }
+
+        private void OnDoorStateChangedEvent(DoorStateChangedEvent @event)
+        {
+            if (@event.Door == door1)
             {
-                InteractDoor(door1, enemyList1, isOpen);
-            };
-            door2.OnOpenDoor += (object sender, bool isOpen) =>
+                InteractDoor(door1, enemyList1, @event.IsOpen);
+            }
+            else if (@event.Door == door2)
             {
-                InteractDoor(door2, enemyList2, isOpen);
-            };
-            door3.OnOpenDoor += (object sender, bool isOpen) =>
+                InteractDoor(door2, enemyList2, @event.IsOpen);
+            }
+            else if (@event.Door == door3)
             {
-                InteractDoor(door3, enemyList3, isOpen);
-            };
+                InteractDoor(door3, enemyList3, @event.IsOpen);
+            }
         }
 
         private void InteractDoor(Door door, List<Unit> enemyListInRoom, bool isOpen)

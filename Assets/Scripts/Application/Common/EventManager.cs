@@ -4,8 +4,10 @@ using System.Collections.Generic;
 
 namespace Application
 {
-    // Static, type-keyed event bus for Domain events. Parallel path alongside the existing
-    // per-class C# EventHandler events - not a replacement for them yet.
+    // Static, type-keyed event bus - the single channel for game events. Listeners filter by the
+    // event's payload when they only care about one object (e.g. their own Unit). Every
+    // AddListener must be paired with a RemoveListener (OnDisable/OnDestroy), since this class
+    // is static and outlives scenes.
     public static class EventManager
     {
         private static readonly Dictionary<Type, Action<GameEvent>> listeners = new Dictionary<Type, Action<GameEvent>>();

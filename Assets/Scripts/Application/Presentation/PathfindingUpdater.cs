@@ -9,13 +9,17 @@ namespace Application
     {
         private void Start()
         {
-            DestructibleCrate.OnAnyDestroyed += DestructibleCrate_OnAnyDestroyed;
+            EventManager.AddListener<CrateDestroyedEvent>(OnCrateDestroyedEvent);
         }
 
-        private void DestructibleCrate_OnAnyDestroyed(object sender, EventArgs e)
+        private void OnDestroy()
         {
-            DestructibleCrate destructibleCrate = sender as DestructibleCrate;
-            Pathfinding.Instance.SetIsWalkableGridPositon(destructibleCrate.GetGridPosition(), true);
+            EventManager.RemoveListener<CrateDestroyedEvent>(OnCrateDestroyedEvent);
+        }
+
+        private void OnCrateDestroyedEvent(CrateDestroyedEvent @event)
+        {
+            Pathfinding.Instance.SetIsWalkableGridPositon(@event.GridPosition, true);
         }
     }
 

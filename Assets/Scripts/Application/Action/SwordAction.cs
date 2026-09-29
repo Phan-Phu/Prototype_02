@@ -9,11 +9,6 @@ namespace Application
 {
     public class SwordAction : BaseAction
     {
-        public static event EventHandler OnAnySwordHit;
-
-        public event EventHandler OnSwordActionStarted;
-        public event EventHandler OnSwordActionCompleted;
-
         private enum State{
             SwingingSwordBeforeHit,
             SwingingSwordAfterHit
@@ -58,11 +53,11 @@ namespace Application
                     state = State.SwingingSwordAfterHit;
                     float afterHitStateTime = 0.5f;
                     stateTimer = afterHitStateTime;
-                    OnAnySwordHit?.Invoke(this, EventArgs.Empty);
+                    EventManager.Broadcast(new SwordHitEvent(this));
                     targetUnit.Damage(100);
                     break;
                 case State.SwingingSwordAfterHit:
-                    OnSwordActionCompleted?.Invoke(this, EventArgs.Empty);
+                    EventManager.Broadcast(new SwordActionCompletedEvent(this));
                     ActionComplete();
                     break;
             }
@@ -123,7 +118,7 @@ namespace Application
             float beforeHitStateTime = 0.7f;
             stateTimer = beforeHitStateTime;
 
-            OnSwordActionStarted?.Invoke(this, EventArgs.Empty);
+            EventManager.Broadcast(new SwordActionStartedEvent(this));
 
             ActionStart(onActionComplete);
         }
