@@ -1,4 +1,4 @@
-# Turn-Based Strategy Course
+# Turn-Based Strategy
 
 A Unity turn-based tactics game (hex grid, action-point unit abilities, enemy AI) built with URP and Cinemachine.
 
