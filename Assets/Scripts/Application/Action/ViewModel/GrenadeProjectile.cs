@@ -8,6 +8,9 @@ namespace Application
 {
     public class GrenadeProjectile : MonoBehaviour
     {
+        // Shared with GrenadeAction so the enemy AI scores exactly the area the explosion damages.
+        public const float DAMAGE_RADIUS = 4f;
+
         [SerializeField] private Transform grenadeExplodeVfxPrefab;
         [SerializeField] private Renderer trailRenderer;
         [SerializeField] private AnimationCurve arcYAnimationCurve;
@@ -33,8 +36,7 @@ namespace Application
             float reachedTargeDistance = .2f;
             if (Vector3.Distance(positionXZ, targetPosition) < reachedTargeDistance)
             {
-                float damageRadius = 4f;
-                Collider[] colliderArray = Physics.OverlapSphere(targetPosition, damageRadius);
+                Collider[] colliderArray = Physics.OverlapSphere(targetPosition, DAMAGE_RADIUS);
 
                 foreach (Collider collider in colliderArray)
                 {

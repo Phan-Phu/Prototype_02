@@ -22,12 +22,24 @@ namespace Application
         }
         public override EnemyAIAction GetEnemyAIAction(GridPosition gridPosition)
         {
-            int targetCountAtGridPosition = unit.GetAction<ShootAction>().GetTargetCountAtPosition(gridPosition);
+            // Score the units the explosion would actually hit: opponents count for, same-team
+            // units (including the thrower) count against, so the AI avoids friendly fire.
+            Vector3 explosionPosition = LevelGrid.Instance.GetWorldPosition(gridPosition);
+            int netTargetCount = 0;
+
+            foreach (Unit otherUnit in UnitManager.Instance.GetUnitList())
+            {
+                if (Vector3.Distance(otherUnit.GetWorldPosition(), explosionPosition) >= GrenadeProjectile.DAMAGE_RADIUS)
+                {
+                    continue;
+                }
+                netTargetCount += otherUnit.IsEnemy() != unit.IsEnemy() ? 1 : -1;
+            }
 
             return new EnemyAIAction
             {
                 gridPosition = gridPosition,
-                actionValue = targetCountAtGridPosition * 10
+                actionValue = netTargetCount * 10
             };
         }
 
