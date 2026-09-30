@@ -104,7 +104,9 @@ namespace Application
 
         public override EnemyAIAction GetEnemyAIAction(GridPosition gridPosition)
         {
-            int targetCountAtGridPosition = unit.GetAction<ShootAction>().GetTargetCountAtPosition(gridPosition);
+            // Units without a ShootAction gain nothing from moving into firing positions.
+            ShootAction shootAction = unit.GetAction<ShootAction>();
+            int targetCountAtGridPosition = shootAction != null ? shootAction.GetTargetCountAtPosition(gridPosition) : 0;
 
             return new EnemyAIAction
             {
