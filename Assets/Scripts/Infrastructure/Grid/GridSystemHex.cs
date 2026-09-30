@@ -122,6 +122,25 @@ namespace Infrastructure
             return neighbours;
         }
 
+        public List<GridPosition> GetGridPositionsInRange(GridPosition center, int range)
+        {
+            List<GridPosition> gridPositionList = new List<GridPosition>();
+
+            // In offset coordinates a hex range never spans more than range cells on either axis.
+            for (int x = center.x - range; x <= center.x + range; x++)
+            {
+                for (int y = center.y - range; y <= center.y + range; y++)
+                {
+                    GridPosition gridPosition = new GridPosition(x, y);
+                    if (IsValidGridPosition(gridPosition) && GetDistance(center, gridPosition) <= range)
+                    {
+                        gridPositionList.Add(gridPosition);
+                    }
+                }
+            }
+            return gridPositionList;
+        }
+
         public int GetWidth()
         {
             return width;

@@ -38,31 +38,8 @@ namespace Application
 
         public override List<GridPosition> GetValidActionPositionList()
         {
-            List<GridPosition> validGridPositionList = new List<GridPosition>();
-
             GridPosition unitGridPosition = unit.GetGridPosition();
-
-            for (int x = -maxThrowDistance; x <= maxThrowDistance; x++)
-            {
-                for (int y = -maxThrowDistance; y <= maxThrowDistance; y++)
-                {
-                    GridPosition offsetGridPosition = new GridPosition(x, y);
-                    GridPosition testGridPosition = unitGridPosition + offsetGridPosition;
-                    if (!LevelGrid.Instance.IsValidGridPosition(testGridPosition))
-                    {
-                        continue;
-                    }
-
-                    int testDistance = Mathf.Abs(x) + Mathf.Abs(y);
-                    if (testDistance > maxThrowDistance)
-                    {
-                        continue;
-                    }
-
-                    validGridPositionList.Add(testGridPosition);
-                }
-            }
-            return validGridPositionList;
+            return LevelGrid.Instance.GetGridPositionsInRange(unitGridPosition, maxThrowDistance);
         }
 
         public override void TakeAction(GridPosition gridPosition, Action onActionComplete)

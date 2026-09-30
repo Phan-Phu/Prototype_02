@@ -39,25 +39,15 @@ namespace Application
 
             GridPosition unitGridPosition = unit.GetGridPosition();
 
-            for (int x = -maxInteractDistance; x <= maxInteractDistance; x++)
+            foreach (GridPosition testGridPosition in LevelGrid.Instance.GetGridPositionsInRange(unitGridPosition, maxInteractDistance))
             {
-                for (int y = -maxInteractDistance; y <= maxInteractDistance; y++)
+                IInteractable interactable = LevelGrid.Instance.GetInteractableAtGridPosition(testGridPosition);
+                if(interactable == null)
                 {
-                    GridPosition offsetGridPosition = new GridPosition(x, y);
-                    GridPosition testGridPosition = unitGridPosition + offsetGridPosition;
-                    if (!LevelGrid.Instance.IsValidGridPosition(testGridPosition))
-                    {
-                        continue;
-                    }
-
-                    IInteractable interactable = LevelGrid.Instance.GetInteractableAtGridPosition(testGridPosition);
-                    if(interactable == null)
-                    {
-                        continue;
-                    }
-
-                    validGridPositionList.Add(testGridPosition);
+                    continue;
                 }
+
+                validGridPositionList.Add(testGridPosition);
             }
             return validGridPositionList;
         }

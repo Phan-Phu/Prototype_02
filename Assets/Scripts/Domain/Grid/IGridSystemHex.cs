@@ -10,6 +10,8 @@ namespace Domain
         bool IsValidGridPosition(GridPosition gridPosition);
         int GetDistance(GridPosition from, GridPosition to);
         List<GridPosition> GetNeighbours(GridPosition gridPosition);
+        // Every valid cell whose hex distance from center is at most range (center included).
+        List<GridPosition> GetGridPositionsInRange(GridPosition center, int range);
         int GetWidth();
         int GetHeight();
     }

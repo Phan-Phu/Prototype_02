@@ -99,48 +99,31 @@ namespace Application
         {
             List<GridPosition> validGridPositionList = new List<GridPosition>();
 
-
-            for (int x = -maxShootDistance; x <= maxShootDistance; x++)
+            foreach (GridPosition testGridPosition in LevelGrid.Instance.GetGridPositionsInRange(unitGridPosition, maxShootDistance))
             {
-                for (int y = -maxShootDistance; y <= maxShootDistance; y++)
+                if (!LevelGrid.Instance.HasAnyUnitOnGridPosition(testGridPosition))
                 {
-                    GridPosition offsetGridPosition = new GridPosition(x, y);
-                    GridPosition testGridPosition = unitGridPosition + offsetGridPosition;
-                    if (!LevelGrid.Instance.IsValidGridPosition(testGridPosition))
-                    {
-                        continue;
-                    }
-
-                    int testDistance = Mathf.Abs(x) + Mathf.Abs(y);
-                    if (testDistance > maxShootDistance)
-                    {
-                        continue;
-                    }
-
-                    if (!LevelGrid.Instance.HasAnyUnitOnGridPosition(testGridPosition))
-                    {
-                        continue;
-                    }
-
-                    Unit targetUnit = LevelGrid.Instance.GetUnitAtGridPosition(testGridPosition);
-                    if (targetUnit.IsEnemy() == unit.IsEnemy())
-                    {
-                        // Both units on same team
-                        continue;
-                    }
-
-                    Vector3 unitWorldPosition = LevelGrid.Instance.GetWorldPosition(unitGridPosition);
-                    Vector3 direction = (targetUnit.GetWorldPosition() - unitWorldPosition).normalized;
-                    float unitShoulderHeight = 1.7f;
-
-                    if(Physics.Raycast(unitWorldPosition + Vector3.up * unitShoulderHeight, direction,
-                        Vector3.Distance(targetUnit.GetWorldPosition(), unitWorldPosition), layerMaskObstacle))
-                    {
-                        continue;
-                    }
-
-                    validGridPositionList.Add(testGridPosition);
+                    continue;
                 }
+
+                Unit targetUnit = LevelGrid.Instance.GetUnitAtGridPosition(testGridPosition);
+                if (targetUnit.IsEnemy() == unit.IsEnemy())
+                {
+                    // Both units on same team
+                    continue;
+                }
+
+                Vector3 unitWorldPosition = LevelGrid.Instance.GetWorldPosition(unitGridPosition);
+                Vector3 direction = (targetUnit.GetWorldPosition() - unitWorldPosition).normalized;
+                float unitShoulderHeight = 1.7f;
+
+                if(Physics.Raycast(unitWorldPosition + Vector3.up * unitShoulderHeight, direction,
+                    Vector3.Distance(targetUnit.GetWorldPosition(), unitWorldPosition), layerMaskObstacle))
+                {
+                    continue;
+                }
+
+                validGridPositionList.Add(testGridPosition);
             }
             return validGridPositionList;
         }

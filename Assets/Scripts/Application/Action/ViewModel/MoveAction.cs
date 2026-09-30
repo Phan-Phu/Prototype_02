@@ -65,42 +65,33 @@ namespace Application
             List<GridPosition> validGridPositionList = new List<GridPosition>();
             GridPosition unitGridPosition = unit.GetGridPosition();
 
-            for (int x = -maxDistance; x <= maxDistance; x++)
+            foreach (GridPosition testGridPosition in LevelGrid.Instance.GetGridPositionsInRange(unitGridPosition, maxDistance))
             {
-                for (int y = -maxDistance; y <= maxDistance; y++)
+                if (unitGridPosition == testGridPosition)
                 {
-                    GridPosition offsetGridPosition = new GridPosition(x, y);
-                    GridPosition testGridPosition = unitGridPosition + offsetGridPosition;
-                    if (!LevelGrid.Instance.IsValidGridPosition(testGridPosition))
-                    {
-                        continue;
-                    }
-                    if (unitGridPosition == testGridPosition)
-                    {
-                        // is value same position where unit already at
-                        continue;
-                    }
-                    if (LevelGrid.Instance.HasAnyUnitOnGridPosition(testGridPosition))
-                    {
-                        continue;
-                    }
-                    if(!Pathfinding.Instance.IsWalkableGridPositon(testGridPosition))
-                    {
-                        continue;
-                    }
-                    if(!Pathfinding.Instance.HasPath(unitGridPosition, testGridPosition))
-                    {
-                        continue;
-                    }
-                    int pathfindingDistanceMultipier = 10;
-                    if(Pathfinding.Instance.GetPathLength(unitGridPosition, testGridPosition) > pathfindingDistanceMultipier * maxDistance)
-                    {
-                        // Path Length so long
-                        continue;
-                    }
-
-                    validGridPositionList.Add(testGridPosition);
+                    // is value same position where unit already at
+                    continue;
                 }
+                if (LevelGrid.Instance.HasAnyUnitOnGridPosition(testGridPosition))
+                {
+                    continue;
+                }
+                if(!Pathfinding.Instance.IsWalkableGridPositon(testGridPosition))
+                {
+                    continue;
+                }
+                if(!Pathfinding.Instance.HasPath(unitGridPosition, testGridPosition))
+                {
+                    continue;
+                }
+                int pathfindingDistanceMultipier = 10;
+                if(Pathfinding.Instance.GetPathLength(unitGridPosition, testGridPosition) > pathfindingDistanceMultipier * maxDistance)
+                {
+                    // Path Length so long
+                    continue;
+                }
+
+                validGridPositionList.Add(testGridPosition);
             }
 
             return validGridPositionList;

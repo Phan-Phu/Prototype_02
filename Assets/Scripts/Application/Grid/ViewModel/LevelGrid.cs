@@ -68,6 +68,7 @@ namespace Application
         public bool IsValidGridPosition(GridPosition gridPosition) => gridSystem.IsValidGridPosition(gridPosition);
         public List<GridPosition> GetNeighbours(GridPosition gridPosition) => gridSystem.GetNeighbours(gridPosition);
         public int GetDistance(GridPosition from, GridPosition to) => gridSystem.GetDistance(from, to);
+        public List<GridPosition> GetGridPositionsInRange(GridPosition center, int range) => gridSystem.GetGridPositionsInRange(center, range);
         public int GetWidth() => gridSystem.GetWidth();
         public int GetHeight() => gridSystem.GetHeight();
 

@@ -87,50 +87,7 @@ namespace Application
 
         private void ShowGridPositionRange(GridPosition gridPosition, int range, GridVisualType gridVisualType)
         {
-            List<GridPosition> validGridPositionList = new List<GridPosition>();
-
-            for (int x = -range; x <= range; x++)
-            {
-                for (int y = -range; y <= range; y++)
-                {
-                    GridPosition offsetGridPosition = new GridPosition(x, y);
-                    GridPosition testGridPosition = gridPosition + offsetGridPosition;
-                    if (!LevelGrid.Instance.IsValidGridPosition(testGridPosition))
-                    {
-                        continue;
-                    }
-
-                    int testDistance = Mathf.Abs(x) + Mathf.Abs(y);
-                    if (testDistance > range)
-                    {
-                        continue;
-                    }
-
-                    validGridPositionList.Add(testGridPosition);
-                }
-            }
-            ShowGridPositionList(validGridPositionList, gridVisualType);
-        }
-
-        private void ShowGridPositionRangeSquare(GridPosition gridPosition, int range, GridVisualType gridVisualType)
-        {
-            List<GridPosition> validGridPositionList = new List<GridPosition>();
-
-            for (int x = -range; x <= range; x++)
-            {
-                for (int y = -range; y <= range; y++)
-                {
-                    GridPosition offsetGridPosition = new GridPosition(x, y);
-                    GridPosition testGridPosition = gridPosition + offsetGridPosition;
-                    if (!LevelGrid.Instance.IsValidGridPosition(testGridPosition))
-                    {
-                        continue;
-                    }
-
-                    validGridPositionList.Add(testGridPosition);
-                }
-            }
-            ShowGridPositionList(validGridPositionList, gridVisualType);
+            ShowGridPositionList(LevelGrid.Instance.GetGridPositionsInRange(gridPosition, range), gridVisualType);
         }
 
         public void ShowGridPositionList(List<GridPosition> gridPositionList, GridVisualType gridVisualType)
@@ -174,7 +131,7 @@ namespace Application
                     break;
                 case SwordAction swordAction:
                     gridVisualType = GridVisualType.Red;
-                    ShowGridPositionRangeSquare(unitSelected.GetGridPosition(), swordAction.GetMaxSwordDistance(), GridVisualType.RedSoft);
+                    ShowGridPositionRange(unitSelected.GetGridPosition(), swordAction.GetMaxSwordDistance(), GridVisualType.RedSoft);
                     break;
                 case InteractAction interactAction:
                     gridVisualType = GridVisualType.Blue;

@@ -83,30 +83,21 @@ namespace Application
 
             GridPosition unitGridPosition = unit.GetGridPosition();
 
-            for (int x = -maxSwordDistance; x <= maxSwordDistance; x++)
+            foreach (GridPosition testGridPosition in LevelGrid.Instance.GetGridPositionsInRange(unitGridPosition, maxSwordDistance))
             {
-                for (int y = -maxSwordDistance; y <= maxSwordDistance; y++)
+                if (!LevelGrid.Instance.HasAnyUnitOnGridPosition(testGridPosition))
                 {
-                    GridPosition offsetGridPosition = new GridPosition(x, y);
-                    GridPosition testGridPosition = unitGridPosition + offsetGridPosition;
-                    if (!LevelGrid.Instance.IsValidGridPosition(testGridPosition))
-                    {
-                        continue;
-                    }
-                    if (!LevelGrid.Instance.HasAnyUnitOnGridPosition(testGridPosition))
-                    {
-                        continue;
-                    }
-
-                    Unit targetUnit = LevelGrid.Instance.GetUnitAtGridPosition(testGridPosition);
-                    if (targetUnit.IsEnemy() == unit.IsEnemy())
-                    {
-                        // Both units on same team
-                        continue;
-                    }
-
-                    validGridPositionList.Add(testGridPosition);
+                    continue;
                 }
+
+                Unit targetUnit = LevelGrid.Instance.GetUnitAtGridPosition(testGridPosition);
+                if (targetUnit.IsEnemy() == unit.IsEnemy())
+                {
+                    // Both units on same team
+                    continue;
+                }
+
+                validGridPositionList.Add(testGridPosition);
             }
             return validGridPositionList;
         }
