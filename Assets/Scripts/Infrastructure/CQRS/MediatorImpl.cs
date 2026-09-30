@@ -1,24 +1,24 @@
 using System;
 using Cysharp.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using UnityEngine;
 using Domain;
-using Application;
 
 namespace Infrastructure
 {
     public class MediatorImpl : IMediator
     {
-        public MediatorImpl()
+        private readonly IServiceProvider serviceProvider;
+
+        // IServiceProvider is injected by the container itself, so the mediator never reaches
+        // back into the Application layer (GameManager) to find its handlers.
+        public MediatorImpl(IServiceProvider serviceProvider)
         {
+            this.serviceProvider = serviceProvider;
         }
 
         public async UniTask<R> Send<T, R>(T command) where T : ICommand<R>
         {
-            //Debug.Log($"[Mediator] {typeof(T).Name}: {JsonUtility.ToJson(command)}");
-
-            var serviceProvider = GameManager.Instance.Get<IServiceProvider>();
-            ICommandHandler <T, R> handler = serviceProvider.GetRequiredService<ICommandHandler<T, R>>();
+            ICommandHandler<T, R> handler = serviceProvider.GetRequiredService<ICommandHandler<T, R>>();
             return await handler.Handle(command);
         }
     }

@@ -15,9 +15,5 @@ namespace AStarPathfinding
         int GetMoveCost(TPosition from, TPosition to);
 
         int GetHeuristicCost(TPosition from, TPosition to);
-
-        // Optional hook for callers that want to mirror per-node search costs (e.g. debug
-        // visualization). Implement as a no-op if not needed.
-        void OnNodeCostsUpdated(TPosition position, int gCost, int hCost, int fCost);
     }
 }

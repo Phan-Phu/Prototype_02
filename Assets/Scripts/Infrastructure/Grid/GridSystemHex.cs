@@ -7,7 +7,8 @@ using Domain;
 namespace Infrastructure
 {
     // Hex coordinate math and storage - the concrete logic behind Domain's IGridSystemHex<T> contract.
-    public class GridSystemHex<TGridObject> : IGridSystemHex<TGridObject>
+    // Layout is "odd-r": odd rows are shifted half a cell to the right.
+    public class GridSystemHex<TGridObject> : IGridSystemHexWorld<TGridObject>
     {
         private const float HEX_VERTICAL_OFFSET_MUTIPLITER = .75f;
         private int width;
@@ -81,6 +82,44 @@ namespace Infrastructure
         public bool IsValidGridPosition(GridPosition gridPosition)
         {
             return gridPosition.x >= 0 && gridPosition.y >= 0 && gridPosition.x < width && gridPosition.y < height;
+        }
+
+        // Number of hex steps between two cells (converts odd-r offset coordinates to axial).
+        public int GetDistance(GridPosition from, GridPosition to)
+        {
+            int fromQ = from.x - (from.y - (from.y & 1)) / 2;
+            int toQ = to.x - (to.y - (to.y & 1)) / 2;
+            int deltaQ = fromQ - toQ;
+            int deltaR = from.y - to.y;
+
+            return (Mathf.Abs(deltaQ) + Mathf.Abs(deltaR) + Mathf.Abs(deltaQ + deltaR)) / 2;
+        }
+
+        // The up-to-six cells sharing an edge with gridPosition, clipped to the grid bounds.
+        public List<GridPosition> GetNeighbours(GridPosition gridPosition)
+        {
+            bool oddRow = gridPosition.y % 2 == 1;
+            int diagonalX = oddRow ? 1 : -1;
+
+            GridPosition[] candidates =
+            {
+                gridPosition + new GridPosition(-1, 0),
+                gridPosition + new GridPosition(1, 0),
+                gridPosition + new GridPosition(0, 1),
+                gridPosition + new GridPosition(0, -1),
+                gridPosition + new GridPosition(diagonalX, 1),
+                gridPosition + new GridPosition(diagonalX, -1),
+            };
+
+            List<GridPosition> neighbours = new List<GridPosition>();
+            foreach (GridPosition candidate in candidates)
+            {
+                if (IsValidGridPosition(candidate))
+                {
+                    neighbours.Add(candidate);
+                }
+            }
+            return neighbours;
         }
 
         public int GetWidth()

@@ -7,6 +7,13 @@ using UnityEngine.SceneManagement;
 
 namespace Application
 {
+    // Access rules used across the project:
+    //  - Scene MonoBehaviour systems (LevelGrid, UnitActionSystem, ...) -> static Instance.
+    //  - Plain C# services (ITurnService, IGridSystemHexFactory, ...)  -> GameManager.Instance.Get<T>().
+    //  - State-changing player requests                                 -> IMediator commands.
+    //  - Notifications                                                  -> EventManager.
+    // Runs before every other script so services exist when other Awake methods resolve them.
+    [DefaultExecutionOrder(-1000)]
     public class GameManager : MonoBehaviour
     {
         public static GameManager Instance { get; private set; }
@@ -31,25 +38,15 @@ namespace Application
         {
             ServiceCollection services = new ServiceCollection();
 
-            // Existing scene-placed MonoBehaviours - registered as-is, not spawned by the container.
-            services.AddSingleton(typeof(IGridSystemHex<>), typeof(GridSystemHex<>));
-            services.AddSingleton<IInteractable, Door>();
-            services.AddSingleton<IInteractable, InteractSphere>();
-            services.AddSingleton<IPathfindingAlgorithm, AStarPathfinder>();
+            // Plain C# services only - scene MonoBehaviours are reached through their static Instance.
+            services.AddSingleton<IGridSystemHexFactory, GridSystemHexFactory>();
             services.AddSingleton<ITurnService, TurnServiceImpl>();
-
-            // Scene-placed MonoBehaviour - resolved via factory (can't be built by the container's own
-            // Activator-based construction) so DI consumers share the one instance already in the scene.
-            // Transient (not singleton): GameManager outlives gameplay scenes, so a cached instance
-            // would point at a destroyed object after the scene is reloaded.
-            services.AddTransient(sp => FindAnyObjectByType<UnitActionSystem>());
 
             // Turn advancement is fire-and-forget (no caller needs a response), so it's driven
             // directly by TurnSystem + EventManager instead of the CQRS mediator below.
 
             services.AddSingleton<IMediator, MediatorImpl>();
-            // Transient because it holds the scene's UnitActionSystem.
-            services.AddTransient<ICommandHandler<SelectUnitCommand, bool>, SelectUnitCommandHandler>();
+            services.AddSingleton<ICommandHandler<SelectUnitCommand, bool>, SelectUnitCommandHandler>();
             services.AddSingleton<ICommandHandler<SpendActionPointCommand, bool>, SpendActionPointCommandHandler>();
 
             serviceProvider = services.BuildServiceProvider();

@@ -1,14 +1,15 @@
-using UnityEngine;
+using System.Collections.Generic;
 
 namespace Domain
 {
-    // Contract only - the hex coordinate math and storage live in Infrastructure/Grid/GridSystemHex.cs.
+    // Engine-free hex grid contract: storage, bounds and hex topology only. Grid <-> world
+    // conversion needs UnityEngine types, so it lives in Infrastructure (IGridSystemHexWorld<T>).
     public interface IGridSystemHex<TGridObject>
     {
-        Vector3 GetWorldPosition(GridPosition gridPosition);
-        GridPosition GetGridPosition(Vector3 worldPosition);
         TGridObject GetGridObject(GridPosition gridPosition);
         bool IsValidGridPosition(GridPosition gridPosition);
+        int GetDistance(GridPosition from, GridPosition to);
+        List<GridPosition> GetNeighbours(GridPosition gridPosition);
         int GetWidth();
         int GetHeight();
     }
