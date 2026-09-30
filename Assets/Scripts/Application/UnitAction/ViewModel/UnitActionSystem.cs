@@ -177,6 +177,11 @@ namespace Application
             EventManager.Broadcast(new SelectedActionChangedEvent(baseAction));
         }
 
+        public bool IsBusy()
+        {
+            return isBusy;
+        }
+
         public BaseAction GetSelectedAction()
         {
             return selectedAction;
