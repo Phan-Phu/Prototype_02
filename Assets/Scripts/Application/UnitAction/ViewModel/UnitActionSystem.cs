@@ -68,7 +68,12 @@ namespace Application
         {
             if (InputManager.Instance.GetMouseButtonDownThisFrame())
             {
-                GridPosition mouseGridPosition = LevelGrid.Instance.GetGridPosition(WorldMouse.GetMousePosition());
+                if (!WorldMouse.TryGetMousePosition(out Vector3 mouseWorldPosition))
+                {
+                    return;
+                }
+
+                GridPosition mouseGridPosition = LevelGrid.Instance.GetGridPosition(mouseWorldPosition);
 
                 if (!selectedAction.IsValidActionGridPosition(mouseGridPosition))
                 {

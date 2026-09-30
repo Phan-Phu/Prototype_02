@@ -18,14 +18,20 @@ namespace Application
         // Update is called once per frame
         void Update()
         {
-            transform.position = WorldMouse.GetMousePosition();
+            if (TryGetMousePosition(out Vector3 mousePosition))
+            {
+                transform.position = mousePosition;
+            }
         }
 
-        public static Vector3 GetMousePosition()
+        // False when the cursor is not over the mouse plane (e.g. outside the map), instead of
+        // silently returning (0, 0, 0), which maps to grid cell (0, 0).
+        public static bool TryGetMousePosition(out Vector3 mousePosition)
         {
             Ray ray = Camera.main.ScreenPointToRay(InputManager.Instance.GetMousePosition());
-            Physics.Raycast(ray, out RaycastHit raycastHit, float.MaxValue, instance.mousePlaneLayerMask);
-            return raycastHit.point;
+            bool isHit = Physics.Raycast(ray, out RaycastHit raycastHit, float.MaxValue, instance.mousePlaneLayerMask);
+            mousePosition = raycastHit.point;
+            return isHit;
         }
     }
 
