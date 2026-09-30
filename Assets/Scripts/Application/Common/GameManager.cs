@@ -24,8 +24,9 @@ namespace Application
         {
             if (Instance != null)
             {
-                Debug.LogError("Has more than 1 GameManager " + Instance + "- " + transform);
-                Destroy(gameObject);
+                // InitScene was loaded again (back to main menu). Keep this copy alive but inert
+                // instead of destroying it: InitScene's Start button targets this component, and
+                // Unity skips UnityEvent calls on destroyed objects. ChangeSceneName is stateless.
                 return;
             }
             Instance = this;

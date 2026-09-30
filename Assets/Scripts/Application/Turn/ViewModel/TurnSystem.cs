@@ -15,7 +15,7 @@ namespace Application
         {
             if(Instance != null)
             {
-                Debug.LogError("Has more than 1 turn System " + Instance + "- " + transform);
+                // Expected when InitScene is loaded again: the persistent instance is kept.
                 Destroy(gameObject);
                 return;
             }
@@ -34,6 +34,12 @@ namespace Application
         public void NextTurn()
         {
             turnService.AdvanceTurn();
+        }
+
+        // TurnSystem survives scene loads, so every new match must start from turn 1.
+        public void ResetTurn()
+        {
+            turnService.Reset();
         }
 
         public int GetTurnNumber()

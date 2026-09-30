@@ -61,6 +61,10 @@ Assets/Scripts/
     ├── Camera/         CameraController, CameraManager, ScreenShake, ScreenShakeAction
     ├── Input/          InputManager, WorldMouse, PlayerInputActions (+ .inputactions asset)
     ├── Pathfinding/    Pathfinding (walkability map + hex adapter over AStarPathfinding), PathfindingUpdater
+    ├── Match/
+    │   ├── ViewModel/  MatchSystem (turn reset on match start, win/lose detection, restart/menu)
+    │   ├── View/       GameOverUI (temporary game-over screen built in code)
+    │   └── Events/     GameOverEvent
     ├── AI/             EnemyAI, EnemyAIAction
     ├── Common/         GameManager (DI composition root), EventManager (event bus)
     └── Debug/          test/debug-only scripts, not used by the shipped game (see below)
@@ -95,24 +99,32 @@ Assets/Scripts/
 2. The start button calls `GameManager.ChangeSceneName("GameScene")`.
 3. In `GameScene`, `LevelGrid` creates the hex grid of `GridCell`s (via `IGridSystemHexFactory`), and `Pathfinding` raycasts every cell to bake a walkability map.
 4. Each `Unit` registers itself in `LevelGrid` and broadcasts `UnitSpawnedEvent`; `UnitManager` builds the friendly/enemy lists from it.
-5. `UnitActionSystem` selects the default unit (`SelectedUnitChangedEvent`), and `GridSystemVisual` spawns one tile visual per cell.
+5. `MatchSystem` resets `TurnSystem` to turn 1 / player turn in `Awake` (it survives scene loads, so a restarted match would otherwise continue the old turn).
+6. `UnitActionSystem` selects the default unit (`SelectedUnitChangedEvent`), and `GridSystemVisual` spawns one tile visual per cell.
 
 ### Player Turn
 
 `UnitActionSystem.Update()` routes input every frame:
 
-1. Bail out if busy, not the player's turn, or the pointer is over UI.
+1. Bail out if busy, the match is over, no unit is selected, not the player's turn, or the pointer is over UI.
 2. Clicking a friendly unit sends a `SelectUnitCommand` through the mediator.
 3. Otherwise, clicking a valid cell for the selected action sends a `SpendActionPointCommand`; on success the system goes busy (`BusyChangedEvent`) and calls `BaseAction.TakeAction(gridPosition, onComplete)`.
 4. The action runs its own state machine and finishes with `ActionComplete()`, which clears busy and broadcasts `ActionCompletedEvent`.
 
-The End Turn button calls `TurnSystem.NextTurn()`.
+The End Turn button calls `TurnSystem.NextTurn()`; it is disabled while an action is running. If the selected unit dies, another friendly unit is selected automatically.
 
 ### Turn Handling
 
 `TurnSystem` wraps `ITurnService` (resolved from DI) and broadcasts `TurnChangedEvent` whenever the turn advances. `Unit` refills its action points at the start of its own side's turn.
 
 On the enemy turn, `EnemyAI` runs a small state machine (`WaitingForEnemyTurn → TakingTurn → Busy`): for every non-frozen enemy it scores each `(action, gridPosition)` pair via `BaseAction.GetEnemyAIAction()`, executes the best one, and repeats until no enemy can act, then calls `TurnSystem.NextTurn()`.
+
+### Match End
+
+`MatchSystem` listens to `UnitDiedEvent`. When the last friendly unit dies the player loses; when the last enemy dies (frozen enemies in closed rooms count as alive) the player wins. It broadcasts `GameOverEvent`, which stops player input and the enemy AI, and `GameOverUI` shows **VICTORY / DEFEAT** with two buttons:
+
+- **Restart** — reloads the current gameplay scene.
+- **Main Menu** — loads `InitScene`. The persistent `TurnSystem`/`InputManager` duplicates in `InitScene` destroy themselves; the duplicate `GameManager` stays alive but inert so the menu's Start button (which targets it) keeps working.
 
 ## Features
 
@@ -127,6 +139,7 @@ On the enemy turn, `EnemyAI` runs a small state machine (`WaitingForEnemyTurn �
 - **Interactables**: doors (which also gate pathfinding) via `IInteractable`.
 - **Scripted rooms**: `LevelScript` freezes/unfreezes enemies as their room's door opens or closes.
 - **Enemy AI** picking the best-scoring action across all enemies each turn.
+- **Win / lose** with a temporary game-over screen (restart or back to the main menu).
 
 ## Architecture & Design Patterns
 

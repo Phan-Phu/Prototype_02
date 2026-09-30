@@ -17,5 +17,12 @@ namespace Infrastructure
 
             TurnAdvanced?.Invoke(currentTurn);
         }
+
+        public void Reset()
+        {
+            currentTurn = new Turn(1, true);
+
+            TurnAdvanced?.Invoke(currentTurn);
+        }
     }
 }

@@ -44,6 +44,11 @@ namespace Application
         {
             if (isBusy) { return; }
 
+            if (MatchSystem.Instance.IsGameOver())
+            {
+                return;
+            }
+
             if (selectedUnit == null)
             {
                 return;

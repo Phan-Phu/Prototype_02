@@ -16,7 +16,7 @@ namespace Application
         {
             if (Instance != null)
             {
-                Debug.LogError("Has more one than input manager: " + Instance + ", " + transform);
+                // Expected when InitScene is loaded again: the persistent instance is kept.
                 Destroy(gameObject);
                 return;
             }
