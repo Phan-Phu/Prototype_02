@@ -38,5 +38,21 @@ namespace Tests.EditMode
             Assert.IsNotNull(raisedTurn);
             Assert.AreEqual(service.CurrentTurn.TurnNumber, raisedTurn.TurnNumber);
         }
+
+        [Test]
+        public void Reset_FromEnemyTurn_ReturnsToTurnOnePlayerTurnAndRaisesEvent()
+        {
+            var service = new TurnServiceImpl();
+            service.AdvanceTurn();
+            service.AdvanceTurn();
+            service.AdvanceTurn();
+            Turn raisedTurn = null;
+            service.TurnAdvanced += t => raisedTurn = t;
+
+            service.Reset();
+
+            Assert.AreEqual(new Turn(1, true), service.CurrentTurn);
+            Assert.AreEqual(service.CurrentTurn, raisedTurn);
+        }
     }
 }

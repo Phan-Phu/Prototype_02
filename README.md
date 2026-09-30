@@ -4,119 +4,192 @@ A Unity turn-based tactics game (hex grid, action-point unit abilities, enemy AI
 
 ## Table of Contents
 
+- [Getting Started](#getting-started)
 - [Project Structure](#project-structure)
 - [Game Workflow](#game-workflow)
 - [Features](#features)
 - [Architecture & Design Patterns](#architecture--design-patterns)
+- [Conventions](#conventions)
+
+## Getting Started
+
+Always start Play mode from **`Assets/Scenes/InitScene.unity`** (build index 0). It hosts the system objects the gameplay scenes depend on and loads `GameScene` from its start button. Pressing Play directly in `GameScene` / `GameScene_Hex` fails because those system objects are missing.
+
+| Scene | Contents |
+|---|---|
+| `InitScene` | System objects: `GameManager`, `TurnSystem`, `InputManager` (all `DontDestroyOnLoad`) |
+| `GameScene` | The playable level: grid, units, camera, UI, level script |
+| `GameScene_Hex` | Alternate copy of the level |
 
 ## Project Structure
 
 ```
 Assets/Scripts/
-├── Action/   — one component per unit ability (Move, Shoot, Sword, Grenade, Spin, Interact)
-├── Grid/     — hex grid data structures and tile visuals
-├── UI/       — turn panel, action buttons, world-space unit UI
-└── (root)    — turn system, level grid, pathfinding, units, camera, input, AI, VFX, interactables
+├── Domain/             engine-free rules: value objects, events, service contracts
+│   ├── Common/         IValueObject, GameEvent, ICommand/ICommandHandler/IMediator, IInteractable
+│   ├── Grid/           GridPosition, IGridSystemHex<T> (storage, bounds, hex distance/neighbours)
+│   └── Turn/           Turn (value object), ITurnService, TurnChangedEvent
+├── Infrastructure/     implementations of Domain contracts (may use UnityEngine)
+│   ├── CQRS/           MediatorImpl
+│   ├── Grid/           GridSystemHex<T>, IGridSystemHexWorld<T>, IGridSystemHexFactory
+│   └── Turn/           TurnServiceImpl
+├── AStarPathfinding/   standalone, grid-agnostic A* library (AStarSearch, IAStarGrid<T>) - outside the layers
+└── Application/        Unity-facing layer, one folder per feature (MVVM inside, see below)
+    ├── Turn/
+    │   ├── ViewModel/  TurnSystem
+    │   └── View/       TurnSystemUI
+    ├── UnitAction/
+    │   ├── ViewModel/  UnitActionSystem (selection, busy state, player input routing)
+    │   ├── View/       UnitActionSystemUI, ActionButtonUI, ActionBusyUI
+    │   ├── Events/     SelectedUnitChangedEvent, SelectedActionChangedEvent, BusyChangedEvent
+    │   └── Commands/   SelectUnit, SpendActionPoint (+ handlers)
+    ├── Unit/
+    │   ├── ViewModel/  Unit, UnitManager, HealthSystem
+    │   ├── View/       UnitWorldUI, UnitAnimator, UnitRagdoll, UnitRagdollSpawner, UnitSelectedVisual, LookAtCamera
+    │   └── Events/     UnitSpawnedEvent, UnitDiedEvent, UnitActionPointsChangedEvent, HealthDamagedEvent, HealthDepletedEvent
+    ├── Grid/
+    │   ├── ViewModel/  LevelGrid, GridCell
+    │   ├── View/       GridSystemVisual, GridSystemVisualSingle
+    │   └── Events/     UnitGridPositionChangedEvent
+    ├── Action/
+    │   ├── ViewModel/  BaseAction, Move/Shoot/Sword/Grenade/Interact/Spin* actions, GrenadeProjectile
+    │   ├── View/       BulletProjectile
+    │   └── Events/     Action/Move/Shoot/Sword events, GrenadeExplodedEvent
+    │                   *SpinAction exists but is not on the unit prefabs yet
+    ├── Level/          Door, DestructibleCrate, LevelScript, Room
+    │   └── Events/     DoorStateChangedEvent, CrateDestroyedEvent
+    ├── Camera/         CameraController, CameraManager, ScreenShake, ScreenShakeAction
+    ├── Input/          InputManager, WorldMouse, PlayerInputActions (+ .inputactions asset)
+    ├── Pathfinding/    Pathfinding (walkability map + hex adapter over AStarPathfinding), PathfindingUpdater
+    ├── Match/
+    │   ├── ViewModel/  MatchSystem (turn reset on match start, win/lose detection, restart/menu)
+    │   ├── View/       GameOverUI (temporary game-over screen built in code)
+    │   └── Events/     GameOverEvent
+    ├── AI/             EnemyAI, EnemyAIAction
+    ├── Common/         GameManager (DI composition root), EventManager (event bus)
+    └── Debug/          test/debug-only scripts, not used by the shipped game (see below)
 ```
 
-Key root-level files by responsibility:
+### Application folder rules
 
-| Area | Files |
+- **One folder per feature/entity** (`Turn`, `Unit`, `Grid`, …). Inside it, MVVM:
+  - **Model** is the Domain + Infrastructure layers, so there is no `Model/` folder in Application.
+  - **`ViewModel/`** — scene systems and bridges to the Model that hold state for Views (e.g. `TurnSystem`, `Unit`, `LevelGrid`). Gameplay rules that still need Unity (actions, health, AP) live here for now; pure rules can move down to Domain later.
+  - **`View/`** — UI and visual effects only; they display ViewModel state and forward player input.
+  - **`Events/`** — one file per `GameEvent`, kept in the feature that raises it.
+  - **`Commands/`** — mediator commands and handlers for state-changing requests.
+- Small features without UI (`Level`, `Camera`, `Input`, `Pathfinding`, `AI`) stay flat; only `Events/` is split out.
+
+### Debug scripts
+
+`Application/Debug/` holds scripts used only for testing layouts and systems. None of them is placed on a unit or created by gameplay code:
+
+| Script | Purpose |
 |---|---|
-| Turn / flow | `TurnSystem.cs`, `UnitActionSystem.cs`, `EnemyAI.cs`, `EnemyAIAction.cs` |
-| Grid / level state | `LevelGrid.cs`, `Pathfinding.cs`, `PathNode.cs`, `PathfindingUpdater.cs`, `UnitVision.cs` |
-| Unit | `Unit.cs`, `UnitManager.cs`, `UnitAnimator.cs`, `UnitSelectedVisual.cs`, `UnitRagdoll.cs`, `UnitRagdollSpawner.cs`, `HealthSystem.cs` |
-| Camera / input | `CameraController.cs`, `CameraManager.cs`, `InputManager.cs`, `WorldMouse.cs`, `LookAtCamera.cs` |
-| Projectiles / VFX | `BulletProjectile.cs`, `GrenadeProjectile.cs`, `ScreenShake.cs`, `ScreenShakeAction.cs` |
-| World / interactables | `Door.cs`, `Room.cs`, `LevelScript.cs`, `InteractSphere.cs`, `IInteractable.cs`, `DestructibleCrate.cs` |
-
-Rendering uses URP (`Assets/Settings/*.asset` pipeline/volume profiles) rather than custom post-processing code.
-
-> Note: `Assets/Scripts/App`, `Domain`, `Infrastructure` are empty folders left over from an unused DI-style refactor attempt. `Assets/Plugins/MicrosoftDI` and `UniTask` are present in the project but not referenced by any script.
+| `GridSystemDebugSpawner`, `IGridDebugVisual`, `GridDebugObject`, `PathfindingGridDebugObject` | Per-cell debug labels (cell contents, walkability). Their prefabs are assigned on `LevelGrid` / `Pathfinding` but nothing spawns them yet. |
+| `InteractSphere` | Test `IInteractable` that toggles colour; not placed in any scene. |
+| `UnitVision` | Line-of-sight helper prototype. |
+| `Testing` | Scratch MonoBehaviour for manual tests. |
 
 ## Game Workflow
 
 ### Boot
 
-All core systems are scene-resident singletons that register themselves in `Awake()`:
+1. `InitScene` loads. `GameManager` (execution order -1000) builds the DI container, then `TurnSystem` and `InputManager` initialise. All three survive scene loads.
+2. The start button calls `GameManager.ChangeSceneName("GameScene")`.
+3. In `GameScene`, `LevelGrid` creates the hex grid of `GridCell`s (via `IGridSystemHexFactory`), and `Pathfinding` raycasts every cell to bake a walkability map.
+4. Each `Unit` registers itself in `LevelGrid` and broadcasts `UnitSpawnedEvent`; `UnitManager` builds the friendly/enemy lists from it.
+5. `MatchSystem` resets `TurnSystem` to turn 1 / player turn in `Awake` (it survives scene loads, so a restarted match would otherwise continue the old turn).
+6. `UnitActionSystem` selects the default unit (`SelectedUnitChangedEvent`), and `GridSystemVisual` spawns one tile visual per cell.
 
-1. `LevelGrid` builds a `GridSystemHex<GridObject>` representing the hex grid, then `Pathfinding` raycasts every cell to bake walkability into a parallel `GridSystemHex<PathNode>`.
-2. Each `Unit` registers itself into `LevelGrid` on `Start()` and fires the static `Unit.OnAnyUnitSpwaned` event, which `UnitManager` uses to build its friendly/enemy unit lists.
-3. `UnitActionSystem` auto-selects a default unit, firing `OnSelectedUnitChanged` for UI and visual listeners.
-4. `GridSystemVisual` instantiates one tile visual per grid cell (hidden until an action needs to highlight valid positions).
+### Player Turn
 
-### Per-Frame Input Loop
+`UnitActionSystem.Update()` routes input every frame:
 
-`UnitActionSystem.Update()` is the central input router, run every frame:
+1. Bail out if busy, the match is over, no unit is selected, not the player's turn, or the pointer is over UI.
+2. Clicking a friendly unit sends a `SelectUnitCommand` through the mediator.
+3. Otherwise, clicking a valid cell for the selected action sends a `SpendActionPointCommand`; on success the system goes busy (`BusyChangedEvent`) and calls `BaseAction.TakeAction(gridPosition, onComplete)`.
+4. The action runs its own state machine and finishes with `ActionComplete()`, which clears busy and broadcasts `ActionCompletedEvent`.
 
-1. Bail out if busy, not the player's turn, or the pointer is over UI.
-2. Raycast for a unit under the mouse — if hit, select it.
-3. Otherwise, if a unit is already selected, try to execute its currently selected `BaseAction` at the grid cell under the mouse.
-
-Executing an action: `Unit.TrySpendActionPointToTakeAction()` checks/spends AP → `UnitActionSystem.SetBusy()` → `BaseAction.TakeAction(gridPosition, onComplete)` → the concrete action runs its own state machine to completion → `ActionComplete()` fires `onActionComplete` and the static `BaseAction.OnAnyActionCompleted` event.
-
-`CameraController` handles pan/rotate/zoom independently every frame, regardless of turn state.
+The End Turn button calls `TurnSystem.NextTurn()`; it is disabled while an action is running. If the selected unit dies, another friendly unit is selected automatically.
 
 ### Turn Handling
 
-`TurnSystem` is a minimal two-phase (player/enemy) turn counter with an `onTurnChanged` event. Ending the player's turn is manual, via the UI's end-turn button — nothing auto-advances it.
+`TurnSystem` wraps `ITurnService` (resolved from DI) and broadcasts `TurnChangedEvent` whenever the turn advances. `Unit` refills its action points at the start of its own side's turn.
 
-On the enemy phase, `EnemyAI` runs its own small state machine (`WaitingForEnemyTurn → TakingTurn → Busy`):
+On the enemy turn, `EnemyAI` runs a small state machine (`WaitingForEnemyTurn → TakingTurn → Busy`): for every non-frozen enemy it scores each `(action, gridPosition)` pair via `BaseAction.GetEnemyAIAction()`, executes the best one, and repeats until no enemy can act, then calls `TurnSystem.NextTurn()`.
 
-1. Iterate every enemy unit's every `BaseAction`.
-2. Score each valid `(action, gridPosition)` pair via `BaseAction.GetEnemyAIAction()`.
-3. Execute the single best-scoring pair across all units/actions.
-4. Repeat until no enemy unit can act, then call `TurnSystem.NextTurn()` to hand control back to the player.
+### Match End
 
-`Unit` refills each unit's action points at the start of its own faction's turn (subscribed to `TurnSystem.onTurnChanged`).
+`MatchSystem` listens to `UnitDiedEvent`. When the last friendly unit dies the player loses; when the last enemy dies (frozen enemies in closed rooms count as alive) the player wins. It broadcasts `GameOverEvent`, which stops player input and the enemy AI, and `GameOverUI` shows **VICTORY / DEFEAT** with two buttons:
+
+- **Restart** — reloads the current gameplay scene.
+- **Main Menu** — loads `InitScene`. The persistent `TurnSystem`/`InputManager` duplicates in `InitScene` destroy themselves; the duplicate `GameManager` stays alive but inert so the menu's Start button (which targets it) keeps working.
 
 ## Features
 
-- **Hexagonal grid** with world↔grid coordinate conversion, occupancy tracking, and tile highlighting for valid move/attack ranges.
-- **A\* pathfinding** over a dedicated walkability grid, dynamically updated when doors open/close or crates are destroyed.
-- **Action-point unit system** — units carry a budget of action points spent on abilities, refilled each turn.
-- **Unit abilities**: Move, Shoot, Sword, Grenade, Spin, Interact — each a self-contained component with its own valid-position query, AP cost, and animation timing.
-- **Mouse-driven selection and targeting** with ground-plane raycasting (`WorldMouse`) and a per-unit selection ring visual.
-- **Free-look strategy camera** (pan/rotate/zoom via Cinemachine) plus a scripted over-the-shoulder "action camera" that engages automatically during shoot actions.
-- **Character animation** driven by ability events (walk, shoot, sword swing) with matching weapon-mesh visibility toggling.
-- **Combat & death**: hit-point tracking, ragdoll physics on death (with explosion force), bullet and grenade projectiles (grenades use area damage and can destroy crates).
-- **Camera-shake feedback** on shoot/sword-hit/grenade-explode events via Cinemachine impulse.
-- **Interactable world objects**: doors (also gate pathfinding) and interact spheres, accessed through a common `IInteractable` interface.
-- **Scripted level triggers**: `LevelScript` freezes/unfreezes ambush enemies in specific rooms as doors are opened.
-- **Enemy AI** that evaluates and executes the best-scoring action across all its units each enemy turn.
-- **In-world and screen-space UI**: turn indicator/end-turn button, per-unit action button bar, "busy" spinner, and floating unit health/name UI.
+- **Hexagonal grid** ("odd-r" layout) with grid↔world conversion, occupancy tracking, and tile highlighting for valid move/attack ranges.
+- **A\* pathfinding** with a hex-distance heuristic, updated when doors open/close or crates are destroyed.
+- **Action-point system** — abilities cost AP, refilled each turn.
+- **Unit abilities**: Move, Shoot, Sword, Grenade, Interact.
+- **Mouse-driven selection and targeting** with a per-unit selection ring.
+- **Strategy camera** (pan/rotate/zoom via Cinemachine) plus an over-the-shoulder action camera during shooting.
+- **Combat & death**: health, ragdolls with explosion force, bullet and grenade projectiles, destructible crates.
+- **Camera shake** on shoot, sword hit and grenade explosion.
+- **Interactables**: doors (which also gate pathfinding) via `IInteractable`.
+- **Scripted rooms**: `LevelScript` freezes/unfreezes enemies as their room's door opens or closes.
+- **Enemy AI** picking the best-scoring action across all enemies each turn.
+- **Win / lose** with a temporary game-over screen (restart or back to the main menu).
 
 ## Architecture & Design Patterns
 
-**Singleton (hand-rolled `static Instance`)**
-Used for nearly every top-level system — `TurnSystem`, `UnitActionSystem`, `LevelGrid`, `Pathfinding`, `UnitManager`, `InputManager`, `GridSystemVisual`, `CameraManager`, `LevelScript`. Cross-system calls go through `X.Instance.Method(...)` rather than injected references; this is the primary mechanism for systems to reach each other.
+### Layers
 
-**Observer / C# events**
-Decouples reactive systems from the code that triggers them. Two flavors are used throughout:
-- Instance events for a single object's lifecycle, e.g. `TurnSystem.onTurnChanged`, `HealthSystem.OnDead`, `Door.OnOpenDoor`.
-- Static "OnAny…" broadcasts for cross-cutting concerns, e.g. `Unit.OnAnyUnitSpwaned/OnAnyUnitDead`, `BaseAction.OnAnyActionStarted/OnAnyActionCompleted`, `ShootAction.OnAnyShoot`.
+`Application → Infrastructure → Domain`. Domain has no UnityEngine dependency; anything that needs Unity types (e.g. grid↔world conversion with `Vector3`) lives in Infrastructure.
 
-UI, camera, VFX, and animation systems all subscribe to these instead of being polled or called directly — e.g. `CameraManager` swaps to the action camera purely by listening to `BaseAction.OnAnyActionStarted/Completed`.
+> **Note — single assembly by design.** All layers compile into one assembly (`Scripts.asmdef`), so the layer boundaries are enforced by convention and code review, not by the compiler. Splitting into per-layer asmdefs (`Domain`, `Infrastructure`, `Application`) is deliberately postponed: the project is small and the split would add setup cost without much benefit yet. Revisit it if the codebase grows or more people work on it.
 
-**Strategy + Template Method (unit abilities)**
-Abstract `BaseAction` defines the contract (`TakeAction`, `GetValidActionPositionList`, `IsValidActionGridPosition`, `GetActionPointCost`, `GetEnemyAIAction`) plus protected `ActionStart`/`ActionComplete` template hooks. Concrete abilities (`MoveAction`, `ShootAction`, `SwordAction`, `GrenadeAction`, `SpinAction`, `InteractAction`) implement it as plain components attached to the unit prefab — **composition over inheritance** for unit capabilities. `Unit.GetAction<T>()` does a simple runtime type lookup over its own components.
+### Dependency access rules
 
-**Finite State Machines**
-Several classes drive themselves with a private `enum State` + timer, ticked in `Update()`:
-- `ShootAction`: Aiming → Shooting → Cooloff
-- `SwordAction`: SwingingSwordBeforeHit → SwingingSwordAfterHit
-- `EnemyAI`: WaitingForEnemyTurn → TakingTurn → Busy
+| What | How to reach it |
+|---|---|
+| Scene MonoBehaviour systems (`LevelGrid`, `Pathfinding`, `UnitActionSystem`, `UnitManager`, `TurnSystem`, `InputManager`, …) | static `X.Instance` |
+| Plain C# services (`ITurnService`, `IGridSystemHexFactory`, `IMediator`) | `GameManager.Instance.Get<T>()` |
+| State-changing player requests | `IMediator.Send<TCommand, TResult>(...)` |
+| Notifications between systems | `EventManager` |
 
-**Generic data structure reuse**
-`GridSystemHex<TGridObject>` is a generic hex-grid container parameterized by a `Func<..., TGridObject>` factory. It's instantiated twice with different payloads: `LevelGrid` uses it for `GridObject` (unit occupancy, interactables), while `Pathfinding` uses a separate instance for `PathNode` (A* walkability/costs).
+**Dependency Injection** — `GameManager` is the composition root (`Microsoft.Extensions.DependencyInjection`). Only plain C# services are registered; scene objects are never put in the container because it outlives scene loads.
 
-**MVC-ish UI**
-UI classes (`UnitActionSystemUI`, `TurnSystemUI`, `ActionButtonUI`, `ActionBusyUI`, `UnitWorldUI`) never mutate game state directly — they only render current state and call into singleton methods on click (e.g. `ActionButtonUI` calls `UnitActionSystem.Instance.SetSelectedAction(...)`), refreshing themselves by subscribing to the events above.
+**Command / Mediator (CQRS write side)** — commands (`SelectUnitCommand`, `SpendActionPointCommand`) are sent through `IMediator`; `MediatorImpl` resolves the matching `ICommandHandler<TCommand, TResult>` from the injected `IServiceProvider`. Callers use `async UniTaskVoid` + `.Forget()`, never `async void`.
 
-**Interface-based polymorphism**
-`IInteractable`, implemented by `Door` and `InteractSphere`, is looked up per grid cell and invoked generically by `InteractAction` without the action needing to know the concrete type.
+**Event bus** — `EventManager` is a static, type-keyed bus. Every game event is a class deriving from `GameEvent` (e.g. `TurnChangedEvent`, `UnitDiedEvent`, `ShootEvent`, `DoorStateChangedEvent`). Listeners that only care about one object filter on the event payload (e.g. `@event.Unit != unit`). There are no C# `event` fields for game events.
 
-**Callback-based completion (no coroutines/async)**
-Action and interaction completion use plain `Action` delegate callbacks (`onActionComplete`, `onInteractComplete`) chained through `BaseAction.ActionStart`/`ActionComplete`, rather than coroutines or UniTask.
+**Strategy + Template Method (unit abilities)** — abstract `BaseAction` defines `TakeAction`, `GetValidActionPositionList`, `IsValidActionGridPosition`, `GetActionPointCost`, `GetEnemyAIAction`, plus `ActionStart`/`ActionComplete` hooks. Concrete abilities are components on the unit prefab (composition over inheritance); `Unit.GetAction<T>()` looks them up.
 
-No ScriptableObjects are used for data — all tunables are `[SerializeField]` fields on MonoBehaviours.
+**Finite State Machines** — `ShootAction` (Aiming → Shooting → Cooloff), `SwordAction` (SwingingSwordBeforeHit → SwingingSwordAfterHit), `EnemyAI`.
+
+**Domain modelling** — `GridPosition` and `Turn` are Value Objects (immutable, compared by value, marked `IValueObject`). Application classes that hold Unity objects, such as `GridCell` (units and interactable on a cell), never derive from Domain types.
+
+**Generic grid** — `GridSystemHex<T>` is created through `IGridSystemHexFactory`; `LevelGrid` stores one `GridCell` per cell and exposes hex distance/neighbours to the rest of the game.
+
+**Standalone A\*** — `AStarPathfinding/` is a separate, grid-agnostic library (no Domain or Unity dependency) and sits outside the Clean Architecture layers. `Pathfinding` keeps the walkability map and adapts the hex grid to `IAStarGrid<GridPosition>` (neighbours and hex-distance heuristic come from `LevelGrid`).
+
+## Known Performance Notes
+
+Not optimised on purpose — the maps and unit counts are small, so none of these is a problem today. Revisit them if levels grow or the enemy turn starts to stutter.
+
+| Where | What | Possible fix |
+|---|---|---|
+| `MoveAction.GetValidActionPositionList` | Runs A\* twice per candidate cell (`HasPath` + `GetPathLength`), up to 121 cells per call. | Run one search per cell, or a single Dijkstra/BFS flood fill from the unit. |
+| `GridSystemVisual` | Recomputes the selected action's valid cells on every `UnitGridPositionChangedEvent`, including enemy moves. | Only refresh on the player's turn, or when the selected unit/action changes. |
+| `EnemyAI` + `MoveAction`/`GrenadeAction.GetEnemyAIAction` | Scores every reachable cell by calling `ShootAction.GetValidActionPositionList` (with raycasts) from it, for every enemy and every decision. | Cache per turn, or score only cells near player units. |
+| `AStarSearch` | Open list is a `List<T>` (`Contains`/`Remove`/min scan are O(n)); `GetNeighbours` allocates a new list per node. | Priority queue + `HashSet` for membership; reuse a neighbour buffer. |
+| `GridSystemVisualSingle.Show`, `InteractSphere` | Assigning `renderer.material` creates a new material instance each time. | Use `sharedMaterial`. |
+| `InputManager` | `PlayerInputActions` is never disabled/disposed (lives for the whole app via `DontDestroyOnLoad`). | `Disable()` + `Dispose()` in `OnDestroy`. |
+
+## Conventions
+
+- Event classes: `<Subject><Something>Event`, deriving from `GameEvent`.
+- Event handlers: `On` + event class name, parameter `@event` — e.g. `private void OnTurnChangedEvent(TurnChangedEvent @event)`.
+- Every `EventManager.AddListener` is paired with `RemoveListener` (`OnEnable`/`OnDisable`, or `Start`/`OnDestroy` for objects that deactivate themselves).
+- No underscores in names, except `static`/`const` values written as `UPPER_SNAKE_CASE`.

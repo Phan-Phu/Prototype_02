@@ -3,13 +3,17 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Domain;
-using Infrastructure;
+using AStarPathfinding;
 
 namespace Application
 {
+    // Owns the level's walkability map and answers path queries with the standalone
+    // AStarPathfinding library. Hex topology comes from LevelGrid.
     public class Pathfinding : MonoBehaviour
     {
         public static Pathfinding Instance;
+
+        private const int MOVE_STRAIGHT_COST = 10;
 
         [SerializeField] Transform gameObjectGridPrefab;
         [SerializeField] LayerMask layerMaskObstacle;
@@ -18,8 +22,8 @@ namespace Application
         private int height;
         private int cellSize;
 
-        private IGridSystemHex<PathNode> gridSystem;
-        private readonly IPathfindingAlgorithm aStarPathfinder = new AStarPathfinder();
+        private bool[,] isWalkableArray;
+        private HexGridAdapter hexGridAdapter;
 
         private void Awake()
         {
@@ -38,9 +42,8 @@ namespace Application
             this.height = height;
             this.cellSize = cellSize;
 
-            gridSystem = new GridSystemHex<PathNode>(witdth, height, cellSize,
-        (IGridSystemHex<PathNode> gridSystem, GridPosition gridPosition) => new PathNode(gridPosition));
-            //gridSystem.GridDebugObject(gameObjectGridPrefab);
+            isWalkableArray = new bool[witdth, height];
+            hexGridAdapter = new HexGridAdapter(this);
 
             for (int x = 0; x < witdth; x++)
             {
@@ -50,32 +53,25 @@ namespace Application
                     Vector3 worldPosition = LevelGrid.Instance.GetWorldPosition(gridPosition);
 
                     float rayCastOffestDistance = 5f;
-                    if (Physics.Raycast(worldPosition + Vector3.down * rayCastOffestDistance, Vector3.up, rayCastOffestDistance * 2, layerMaskObstacle))
-                    {
-                        GetNode(x, y).SetIsWalkable(false);
-                    }
+                    bool isBlocked = Physics.Raycast(worldPosition + Vector3.down * rayCastOffestDistance, Vector3.up, rayCastOffestDistance * 2, layerMaskObstacle);
+                    isWalkableArray[x, y] = !isBlocked;
                 }
             }
         }
 
         public List<GridPosition> FindPath(GridPosition startGridPosition, GridPosition endGridPosition, out int pathLength)
         {
-            return aStarPathfinder.FindPath(gridSystem, startGridPosition, endGridPosition, out pathLength);
-        }
-
-        private PathNode GetNode(int x, int y)
-        {
-            return gridSystem.GetGridObject(new GridPosition(x, y));
+            return AStarSearch.FindPath(hexGridAdapter, startGridPosition, endGridPosition, out pathLength);
         }
 
         public void SetIsWalkableGridPositon(GridPosition gridPosition, bool isWalkable)
         {
-            gridSystem.GetGridObject(gridPosition).SetIsWalkable(isWalkable);
+            isWalkableArray[gridPosition.x, gridPosition.y] = isWalkable;
         }
 
         public bool IsWalkableGridPositon(GridPosition gridPosition)
         {
-            return gridSystem.GetGridObject(gridPosition).IsWalkable();
+            return isWalkableArray[gridPosition.x, gridPosition.y];
         }
 
         public bool HasPath(GridPosition startGridPosition, GridPosition endGridPosition)
@@ -87,6 +83,38 @@ namespace Application
         {
             FindPath(startGridPosition, endGridPosition, out int pathLength);
             return pathLength;
+        }
+
+        // Bridges the game's hex grid to the grid-agnostic A* library.
+        private class HexGridAdapter : IAStarGrid<GridPosition>
+        {
+            private readonly Pathfinding pathfinding;
+
+            public HexGridAdapter(Pathfinding pathfinding)
+            {
+                this.pathfinding = pathfinding;
+            }
+
+            public bool IsWalkable(GridPosition position)
+            {
+                return pathfinding.IsWalkableGridPositon(position);
+            }
+
+            public IEnumerable<GridPosition> GetNeighbours(GridPosition position)
+            {
+                return LevelGrid.Instance.GetNeighbours(position);
+            }
+
+            public int GetMoveCost(GridPosition from, GridPosition to)
+            {
+                return MOVE_STRAIGHT_COST;
+            }
+
+            public int GetHeuristicCost(GridPosition from, GridPosition to)
+            {
+                // Hex step count never overestimates the real cost, so A* still finds the shortest path.
+                return MOVE_STRAIGHT_COST * LevelGrid.Instance.GetDistance(from, to);
+            }
         }
     }
 }

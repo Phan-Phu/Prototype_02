@@ -41,6 +41,11 @@ namespace Application
                 return;
             }
 
+            if (MatchSystem.Instance.IsGameOver())
+            {
+                return;
+            }
+
             switch (state)
             {
                 case State.WaittingForEnemyTurn:

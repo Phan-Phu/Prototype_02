@@ -33,5 +33,27 @@ namespace Tests.EditMode
             Assert.IsFalse(playerTurn.Next().IsPlayerTurn);
             Assert.IsTrue(enemyTurn.Next().IsPlayerTurn);
         }
+
+        [Test]
+        public void Equals_SameValues_AreEqual()
+        {
+            var a = new Turn(3, true);
+            var b = new Turn(3, true);
+
+            Assert.AreEqual(a, b);
+            Assert.IsTrue(a == b);
+            Assert.AreEqual(a.GetHashCode(), b.GetHashCode());
+        }
+
+        [Test]
+        public void Equals_SameNumberDifferentSide_AreNotEqual()
+        {
+            // Value object: comparing only the turn number (the old Entity behaviour) is wrong.
+            var playerTurn = new Turn(3, true);
+            var enemyTurn = new Turn(3, false);
+
+            Assert.AreNotEqual(playerTurn, enemyTurn);
+            Assert.IsTrue(playerTurn != enemyTurn);
+        }
     }
 }

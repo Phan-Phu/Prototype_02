@@ -4,9 +4,8 @@ using System.Collections.Generic;
 namespace AStarPathfinding
 {
     // Pure A* search. Knows nothing about hex/square grids or Unity - callers supply
-    // topology and costs via IAStarGrid<TPosition>. See
-    // Infrastructure/Pathfinding/AStarPathfinder.cs for the adapter that bridges this to the
-    // game's Domain grid types.
+    // topology and costs via IAStarGrid<TPosition>. The game's hex grid is adapted in
+    // Application/Pathfinding/Pathfinding.cs.
     public static class AStarSearch
     {
         private class NodeRecord<TPosition>
@@ -38,7 +37,6 @@ namespace AStarPathfinding
             NodeRecord<TPosition> startRecord = GetRecord(start);
             startRecord.GCost = 0;
             startRecord.HCost = grid.GetHeuristicCost(start, end);
-            grid.OnNodeCostsUpdated(start, startRecord.GCost, startRecord.HCost, startRecord.FCost);
             openList.Add(start);
 
             while (openList.Count > 0)
@@ -74,7 +72,6 @@ namespace AStarPathfinding
                         neighbourRecord.HasCameFrom = true;
                         neighbourRecord.GCost = tentativeGCost;
                         neighbourRecord.HCost = grid.GetHeuristicCost(neighbour, end);
-                        grid.OnNodeCostsUpdated(neighbour, neighbourRecord.GCost, neighbourRecord.HCost, neighbourRecord.FCost);
 
                         if (!openList.Contains(neighbour))
                         {
