@@ -60,6 +60,11 @@ namespace Application
             actionButtonUIList.Clear();
 
             Unit unitSelected = unitActionSystem.GetSelectedUnit();
+            if (unitSelected == null)
+            {
+                return;
+            }
+
             foreach (BaseAction baseAction in unitSelected.GetBaseActionArray())
             {
                 Transform actionButtonTransform = Instantiate(actionButtonPrefab, actionButtonContainerTransform);
@@ -93,7 +98,7 @@ namespace Application
         private void UpdateActionPoint()
         {
             Unit selectedUnit = unitActionSystem.GetSelectedUnit();
-            actionPointText.text = "Action Point: " + selectedUnit.GetActionPoint();
+            actionPointText.text = selectedUnit != null ? "Action Point: " + selectedUnit.GetActionPoint() : "";
         }
 
         private void OnTurnChangedEvent(TurnChangedEvent @event)

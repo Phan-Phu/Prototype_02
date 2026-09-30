@@ -30,12 +30,24 @@ namespace Application
 
         private void Start()
         {
+            EventManager.AddListener<UnitDiedEvent>(OnUnitDiedEvent);
+
             SetSelectedUnit(selectedUnit);
+        }
+
+        private void OnDestroy()
+        {
+            EventManager.RemoveListener<UnitDiedEvent>(OnUnitDiedEvent);
         }
 
         private void Update()
         {
             if (isBusy) { return; }
+
+            if (selectedUnit == null)
+            {
+                return;
+            }
 
             if(!TurnSystem.Instance.IsPlayerTurn())
             {
@@ -128,13 +140,34 @@ namespace Application
             await GameManager.Instance.Get<IMediator>().Send<SelectUnitCommand, bool>(new SelectUnitCommand(unit));
         }
 
+        // unit may be null when no friendly unit is left to select.
         public void SetSelectedUnit(Unit unit)
         {
             selectedUnit = unit;
 
-            SetSelectedAction(unit.GetAction<MoveAction>());
+            SetSelectedAction(unit != null ? unit.GetAction<MoveAction>() : null);
 
             EventManager.Broadcast(new SelectedUnitChangedEvent(unit));
+        }
+
+        private void OnUnitDiedEvent(UnitDiedEvent @event)
+        {
+            if (@event.Unit != selectedUnit)
+            {
+                return;
+            }
+
+            // The dead unit may still be in UnitManager's list if it handles this event after us.
+            foreach (Unit friendlyUnit in UnitManager.Instance.GetFriendlyUnitList())
+            {
+                if (friendlyUnit != @event.Unit)
+                {
+                    SetSelectedUnit(friendlyUnit);
+                    return;
+                }
+            }
+
+            SetSelectedUnit(null);
         }
 
         public void SetSelectedAction(BaseAction baseAction)

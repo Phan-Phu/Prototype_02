@@ -148,6 +148,11 @@ namespace Application
             Unit unitSelected = unitActionSystem.GetSelectedUnit();
             BaseAction seletedAction = unitActionSystem.GetSelectedAction();
 
+            if (unitSelected == null || seletedAction == null)
+            {
+                return;
+            }
+
             GridVisualType gridVisualType;
 
 
