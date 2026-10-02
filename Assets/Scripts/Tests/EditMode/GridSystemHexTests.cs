@@ -64,6 +64,23 @@ namespace Tests.EditMode
         }
 
         [Test]
+        public void GetWorldPosition_ThenGetGridPosition_RoundTripsForEveryCell()
+        {
+            // Same size as the shipped level, so odd/even rows and every edge are covered.
+            var grid = new GridSystemHex<int>(15, 20, 2, (g, pos) => 0);
+
+            for (int x = 0; x < 15; x++)
+            {
+                for (int y = 0; y < 20; y++)
+                {
+                    var original = new GridPosition(x, y);
+
+                    Assert.AreEqual(original, grid.GetGridPosition(grid.GetWorldPosition(original)));
+                }
+            }
+        }
+
+        [Test]
         public void GetNeighbours_EvenRowInteriorCell_ReturnsSixCellsShiftedLeft()
         {
             var grid = new GridSystemHex<int>(6, 6, 2, (g, pos) => 0);
