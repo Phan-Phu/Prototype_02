@@ -15,6 +15,13 @@ namespace Application
 
         public static void AddListener<T>(Action<T> listener) where T : GameEvent
         {
+            // Already subscribed: adding again would orphan the first wrapper (never removable)
+            // and invoke the listener twice per event.
+            if (wrappers.ContainsKey(listener))
+            {
+                return;
+            }
+
             void Wrapper(GameEvent gameEvent) => listener((T)gameEvent);
             wrappers[listener] = Wrapper;
 

@@ -55,9 +55,11 @@ namespace Application
         public override void TakeAction(GridPosition gridPosition, Action onActionComplete)
         {
             IInteractable interactable = LevelGrid.Instance.GetInteractableAtGridPosition(gridPosition);
-            interactable.Interact(OnInteractComplete);
 
+            // Start first: an interactable that completes synchronously calls OnInteractComplete
+            // immediately, which needs onActionComplete to be set already.
             ActionStart(onActionComplete);
+            interactable.Interact(OnInteractComplete);
         }
 
         private void OnInteractComplete()

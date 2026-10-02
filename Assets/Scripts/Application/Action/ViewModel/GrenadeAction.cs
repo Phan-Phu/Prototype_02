@@ -50,8 +50,33 @@ namespace Application
 
         public override List<GridPosition> GetValidActionPositionList()
         {
+            List<GridPosition> validGridPositionList = new List<GridPosition>();
+
             GridPosition unitGridPosition = unit.GetGridPosition();
-            return LevelGrid.Instance.GetGridPositionsInRange(unitGridPosition, maxThrowDistance);
+            Vector3 unitWorldPosition = LevelGrid.Instance.GetWorldPosition(unitGridPosition);
+            float unitShoulderHeight = 1.7f;
+
+            foreach (GridPosition testGridPosition in LevelGrid.Instance.GetGridPositionsInRange(unitGridPosition, maxThrowDistance))
+            {
+                if (testGridPosition == unitGridPosition)
+                {
+                    // Throwing at your own feet is never a valid move.
+                    continue;
+                }
+
+                // Walls block the throw; a ray at shoulder height passes over low cover such as
+                // crates, which the grenade's arc clears anyway.
+                Vector3 targetWorldPosition = LevelGrid.Instance.GetWorldPosition(testGridPosition);
+                if (Physics.Raycast(unitWorldPosition + Vector3.up * unitShoulderHeight,
+                    (targetWorldPosition - unitWorldPosition).normalized,
+                    Vector3.Distance(unitWorldPosition, targetWorldPosition), layerMaskObstacle))
+                {
+                    continue;
+                }
+
+                validGridPositionList.Add(testGridPosition);
+            }
+            return validGridPositionList;
         }
 
         public override void TakeAction(GridPosition gridPosition, Action onActionComplete)
