@@ -39,20 +39,23 @@ namespace Application
 
         public void AddUnitAtGridPosition(GridPosition gridPosition, Unit unit)
         {
-            GridCell gridCell = gridSystem.GetGridObject(gridPosition);
-            gridCell.AddUnit(unit);
+            if (TryGetGridCellForWrite(gridPosition, unit, out GridCell gridCell))
+            {
+                gridCell.AddUnit(unit);
+            }
         }
 
         public List<Unit> GetUnitListAtGridPosition(GridPosition gridPosition)
         {
-            GridCell gridCell = gridSystem.GetGridObject(gridPosition);
-            return gridCell.GetUnitList();
+            return TryGetGridCell(gridPosition, out GridCell gridCell) ? gridCell.GetUnitList() : new List<Unit>();
         }
 
         public void RemoveUnitAtGridPosition(GridPosition gridPosition, Unit unit)
         {
-            GridCell gridCell = gridSystem.GetGridObject(gridPosition);
-            gridCell.RemoveUnit(unit);
+            if (TryGetGridCellForWrite(gridPosition, unit, out GridCell gridCell))
+            {
+                gridCell.RemoveUnit(unit);
+            }
         }
 
         public void UnitMoveGridPosition(Unit unit, GridPosition fromGridPosition, GridPosition toGridPosition)
@@ -74,26 +77,44 @@ namespace Application
 
         public bool HasAnyUnitOnGridPosition(GridPosition gridPosition)
         {
-            GridCell gridCell = gridSystem.GetGridObject(gridPosition);
-            return gridCell.HasAnyUnit();
+            return TryGetGridCell(gridPosition, out GridCell gridCell) && gridCell.HasAnyUnit();
         }
 
         public Unit GetUnitAtGridPosition(GridPosition gridPosition)
         {
-            GridCell gridCell = gridSystem.GetGridObject(gridPosition);
-            return gridCell.GetUnit();
+            return TryGetGridCell(gridPosition, out GridCell gridCell) ? gridCell.GetUnit() : null;
         }
 
         public IInteractable GetInteractableAtGridPosition(GridPosition gridPosition)
         {
-            GridCell gridCell = gridSystem.GetGridObject(gridPosition);
-            return gridCell.GetInteractable();
+            return TryGetGridCell(gridPosition, out GridCell gridCell) ? gridCell.GetInteractable() : null;
         }
 
         public void SetInteractableAtGridPosition(GridPosition gridPosition, IInteractable interactable)
         {
-            GridCell gridCell = gridSystem.GetGridObject(gridPosition);
-            gridCell.SetInteractable(interactable);
+            if (TryGetGridCellForWrite(gridPosition, interactable as UnityEngine.Object, out GridCell gridCell))
+            {
+                gridCell.SetInteractable(interactable);
+            }
+        }
+
+        // Queries outside the grid simply find nothing.
+        private bool TryGetGridCell(GridPosition gridPosition, out GridCell gridCell)
+        {
+            gridCell = gridSystem.IsValidGridPosition(gridPosition) ? gridSystem.GetGridObject(gridPosition) : null;
+            return gridCell != null;
+        }
+
+        // Writes outside the grid mean an object is placed off the level: report it instead of
+        // throwing IndexOutOfRangeException during scene start.
+        private bool TryGetGridCellForWrite(GridPosition gridPosition, UnityEngine.Object source, out GridCell gridCell)
+        {
+            if (TryGetGridCell(gridPosition, out gridCell))
+            {
+                return true;
+            }
+            Debug.LogError($"{source} is outside the level grid at {gridPosition}; it is ignored by the grid.", source);
+            return false;
         }
     }
 }

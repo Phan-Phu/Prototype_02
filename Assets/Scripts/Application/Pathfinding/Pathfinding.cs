@@ -66,12 +66,18 @@ namespace Application
 
         public void SetIsWalkableGridPositon(GridPosition gridPosition, bool isWalkable)
         {
+            if (!LevelGrid.Instance.IsValidGridPosition(gridPosition))
+            {
+                Debug.LogError($"Cannot set walkability outside the level grid at {gridPosition}.");
+                return;
+            }
             isWalkableArray[gridPosition.x, gridPosition.y] = isWalkable;
         }
 
+        // Cells outside the grid are never walkable.
         public bool IsWalkableGridPositon(GridPosition gridPosition)
         {
-            return isWalkableArray[gridPosition.x, gridPosition.y];
+            return LevelGrid.Instance.IsValidGridPosition(gridPosition) && isWalkableArray[gridPosition.x, gridPosition.y];
         }
 
         public bool HasPath(GridPosition startGridPosition, GridPosition endGridPosition)
